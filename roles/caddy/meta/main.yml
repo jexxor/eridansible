@@ -1,0 +1,5 @@
+---
+galaxy_info:
+  role_name: caddy
+  description: Caddy reverse proxy via Docker Compose
+dependencies: []

@@ -1,0 +1,18 @@
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+{% if caddy_compose_ports | length > 0 %}
+    ports:
+{% for mapping in caddy_compose_ports %}
+      - "{{ mapping }}"
+{% endfor %}
+{% endif %}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}

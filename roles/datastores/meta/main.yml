@@ -1,0 +1,5 @@
+---
+galaxy_info:
+  role_name: datastores
+  description: PostgreSQL and Redis via Docker Compose
+dependencies: []

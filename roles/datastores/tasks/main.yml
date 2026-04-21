@@ -1,0 +1,50 @@
+---
+- name: Require PostgreSQL password for datastores
+  ansible.builtin.assert:
+    that:
+      - datastore_postgres_password | length > 0
+    fail_msg: "Set datastore_postgres_password in group_vars (or vault)."
+
+- name: Ensure datastores project directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ datastore_root }}"
+    - "{{ datastore_root }}/postgres"
+
+- name: Write Compose environment file
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ datastore_root }}/.env"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Render Docker Compose for PostgreSQL + Redis
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ datastore_root }}/{{ datastore_compose_filename }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Pull Compose images
+  ansible.builtin.command:
+    cmd: "docker-compose -f {{ datastore_compose_filename }} pull"
+    chdir: "{{ datastore_root }}"
+  when: datastore_compose_pull_before_up | bool
+  changed_when: false
+
+- name: Bring datastores services up
+  ansible.builtin.command:
+    cmd: "docker-compose -f {{ datastore_compose_filename }} up -d"
+    chdir: "{{ datastore_root }}"
+  register: datastores_compose_up
+  changed_when: >-
+    ('Creating' in (datastores_compose_up.stdout ~ datastores_compose_up.stderr))
+    or ('Recreating' in (datastores_compose_up.stdout ~ datastores_compose_up.stderr))
+    or ('Starting' in (datastores_compose_up.stdout ~ datastores_compose_up.stderr))
