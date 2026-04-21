@@ -27,6 +27,4 @@ jobs:
         run: ansible-galaxy collection install -r collections/requirements.yml -p .ansible/collections
 
       - name: Run ansible-lint
-        env:
-          ANSIBLE_COLLECTIONS_PATH: "${{ github.workspace }}/.ansible/collections:/usr/share/ansible/collections"
-        run: ansible-lint --force-color -c "${{ github.workspace }}/.ansible-lint" "${{ github.workspace }}"
+        run: ansible-lint ./roles/ ./playbooks/ --config .ansible-lint
