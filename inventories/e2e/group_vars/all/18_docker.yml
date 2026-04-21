@@ -5,4 +5,3 @@ docker_install_compose: true
 docker_users:
   - "{{ ansible_user_id }}"
   - vagrant
-

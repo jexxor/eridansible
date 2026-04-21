@@ -42,7 +42,7 @@
       ansible.builtin.command: "dd if=/dev/zero of={{ base_host_swapfile_path }} bs=1M count={{ base_host_swapfile_size_mb }}"
       args:
         creates: "{{ base_host_swapfile_path }}"
-      register: swapfile_create
+      register: base_host_swapfile_create
 
     - name: Set permissions for swapfile
       ansible.builtin.file:
@@ -53,12 +53,12 @@
 
     - name: Format swapfile
       ansible.builtin.command: "mkswap {{ base_host_swapfile_path }}"
-      when: swapfile_create.changed
+      when: base_host_swapfile_create.changed
       changed_when: true
 
     - name: Enable swapfile
       ansible.builtin.command: "swapon {{ base_host_swapfile_path }}"
-      when: swapfile_create.changed
+      when: base_host_swapfile_create.changed
       changed_when: true
 
     - name: Ensure swapfile is enabled at boot

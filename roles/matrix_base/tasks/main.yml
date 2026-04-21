@@ -93,8 +93,8 @@
         cd "{{ datastore_root }}"
         docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
           pg_isready -U "{{ datastore_postgres_user }}" -d postgres
-      register: matrix_pg_ready
-      until: matrix_pg_ready.rc == 0
+      register: matrix_base_pg_ready
+      until: matrix_base_pg_ready.rc == 0
       retries: 36
       delay: 5
       changed_when: false
@@ -113,8 +113,8 @@
         docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
           psql -U "{{ datastore_postgres_user }}" -d postgres -v ON_ERROR_STOP=1 \
           -c "CREATE DATABASE synapse OWNER {{ datastore_postgres_user }};"
-      register: matrix_db_create
-      changed_when: "'CREATE DATABASE' in (matrix_db_create.stdout | default(''))"
+      register: matrix_base_db_create
+      changed_when: "'CREATE DATABASE' in (matrix_base_db_create.stdout | default(''))"
 
     - name: Bootstrap Synapse /data (generate signing key and base config once)
       ansible.builtin.command:
