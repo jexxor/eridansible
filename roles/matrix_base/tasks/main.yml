@@ -1,5 +1,5 @@
 ---
-- name: Matrix base stack (Synapse + Element + optional workers)
+- name: Matrix base (Synapse + Element + workers)
   block:
     - name: Require secrets when Matrix base is enabled
       ansible.builtin.assert:
@@ -11,14 +11,35 @@
           Set matrix_base_registration_shared_secret (16+ chars) and datastore_postgres_password
           (same DB as roles/datastores) when matrix_base_enable is true.
 
-    - name: Require worker replication secret when federation sender worker is enabled
+    - name: Derive effective Synapse worker definitions (explicit matrix_base_workers)
+      ansible.builtin.set_fact:
+        matrix_base_workers_effective: "{{ matrix_base_workers | default([]) }}"
+      when: (matrix_base_workers | default([]) | length) > 0
+
+    - name: Derive effective Synapse worker definitions (legacy federation_sender boolean)
+      ansible.builtin.set_fact:
+        matrix_base_workers_effective:
+          - name: federation_sender1
+            worker_app: synapse.app.federation_sender
+      when:
+        - (matrix_base_workers | default([]) | length) == 0
+        - matrix_base_workers_federation_sender | default(false) | bool
+
+    - name: Derive effective Synapse worker definitions (empty)
+      ansible.builtin.set_fact:
+        matrix_base_workers_effective: []
+      when:
+        - (matrix_base_workers | default([]) | length) == 0
+        - not (matrix_base_workers_federation_sender | default(false) | bool)
+
+    - name: Require worker replication secret when a federation sender worker is configured
       ansible.builtin.assert:
         that:
           - matrix_base_worker_replication_secret | length >= 16
         fail_msg: >-
-          Set matrix_base_worker_replication_secret (16+ chars) when
-          matrix_base_workers_federation_sender is true.
-      when: matrix_base_workers_federation_sender | bool
+          Set matrix_base_worker_replication_secret (16+ chars) when using federation sender workers
+          (matrix_base_workers with worker_app synapse.app.federation_sender, or legacy matrix_base_workers_federation_sender).
+      when: (matrix_base_workers_effective | default([]) | selectattr('worker_app', 'equalto', 'synapse.app.federation_sender') | list | length) > 0
 
     - name: Require TURN shared secret when turn_uris is set
       ansible.builtin.assert:
@@ -101,14 +122,25 @@
         group: root
         mode: "0644"
 
-    - name: Render federation sender worker config
+    - name: Render Synapse worker configs
       ansible.builtin.template:
-        src: workers/federation_sender1.yaml.j2
-        dest: "{{ matrix_base_root }}/data/workers/federation_sender1.yaml"
+        src: workers/generic_worker.yaml.j2
+        dest: "{{ matrix_base_root }}/data/workers/{{ item.name }}.yaml"
         owner: root
         group: root
         mode: "0644"
-      when: matrix_base_workers_federation_sender | bool
+      loop: "{{ matrix_base_workers_effective | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Hand Synapse /data tree to the container user (avoids PermissionError on signing key / media)
+      ansible.builtin.file:
+        path: "{{ matrix_base_root }}/data"
+        state: directory
+        owner: "{{ matrix_base_synapse_uid }}"
+        group: "{{ matrix_base_synapse_gid }}"
+        recurse: true
+        mode: "0750"
 
     - name: Render Element Web config
       ansible.builtin.template:
@@ -151,4 +183,7 @@
         ('Creating' in (matrix_base_compose_up.stdout ~ matrix_base_compose_up.stderr))
         or ('Recreating' in (matrix_base_compose_up.stdout ~ matrix_base_compose_up.stderr))
         or ('Starting' in (matrix_base_compose_up.stdout ~ matrix_base_compose_up.stderr))
+
+    - name: Validate essential Matrix base endpoints (Synapse + Element on Docker network)
+      ansible.builtin.include_tasks: validate.yml
   when: matrix_base_enable | bool

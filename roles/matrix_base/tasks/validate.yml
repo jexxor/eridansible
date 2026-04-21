@@ -1,0 +1,52 @@
+---
+- name: Wait for Synapse client API (/_matrix/client/versions)
+  ansible.builtin.shell: |
+    set -e
+    docker-compose -f "{{ matrix_base_compose_filename }}" exec -T synapse python3 -c "
+    import urllib.request, json
+    r = urllib.request.urlopen('http://127.0.0.1:8008/_matrix/client/versions', timeout=10)
+    assert r.getcode() == 200
+    data = json.loads(r.read().decode())
+    assert 'versions' in data
+    "
+  args:
+    chdir: "{{ matrix_base_root }}"
+  register: matrix_base_validate_synapse
+  until: matrix_base_validate_synapse.rc == 0
+  retries: "{{ matrix_base_validate_retries }}"
+  delay: "{{ matrix_base_validate_delay }}"
+  changed_when: false
+
+- name: Assert Synapse response includes Matrix client versions
+  ansible.builtin.assert:
+    that:
+      - matrix_base_validate_synapse.rc == 0
+    fail_msg: >-
+      Synapse did not return a valid /_matrix/client/versions payload in time.
+      Check `docker-compose -f {{ matrix_base_compose_filename }} logs synapse` under {{ matrix_base_root }}.
+
+- name: Wait for Element Web on the app network
+  ansible.builtin.shell: |
+    set -e
+    docker-compose -f "{{ matrix_base_compose_filename }}" exec -T synapse python3 -c "
+    import urllib.request
+    r = urllib.request.urlopen('http://element-web/', timeout=15)
+    assert r.getcode() == 200
+    body = r.read(4000).lower()
+    assert b'html' in body
+    "
+  args:
+    chdir: "{{ matrix_base_root }}"
+  register: matrix_base_validate_element
+  until: matrix_base_validate_element.rc == 0
+  retries: "{{ matrix_base_validate_retries }}"
+  delay: 3
+  changed_when: false
+
+- name: Assert Element Web became reachable
+  ansible.builtin.assert:
+    that:
+      - matrix_base_validate_element.rc == 0
+    fail_msg: >-
+      Element Web did not serve HTML in time from the app network.
+      Check `docker-compose -f {{ matrix_base_compose_filename }} logs element-web` under {{ matrix_base_root }}.

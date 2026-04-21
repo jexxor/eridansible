@@ -1,6 +1,7 @@
 services:
   synapse:
     image: {{ matrix_base_synapse_image }}
+    user: "{{ matrix_base_synapse_uid }}:{{ matrix_base_synapse_gid }}"
     restart: unless-stopped
     environment:
       SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
@@ -30,18 +31,18 @@ services:
       synapse:
         condition: service_started
 
-{% if matrix_base_workers_federation_sender | bool %}
-  synapse-federation-sender:
+{% for w in matrix_base_workers_effective | default([]) %}
+  synapse-worker-{{ w.name | replace('_', '-') }}:
     image: {{ matrix_base_synapse_image }}
     restart: unless-stopped
-    user: "991:991"
+    user: "{{ matrix_base_synapse_uid }}:{{ matrix_base_synapse_gid }}"
     command:
       - /start.py
       - run
       - -m
       - synapse.app.generic_worker
       - --config-path=/data/homeserver.yaml
-      - --config-path=/data/workers/federation_sender1.yaml
+      - --config-path=/data/workers/{{ w.name }}.yaml
     volumes:
       - ./data:/data
     networks:
@@ -50,10 +51,9 @@ services:
     depends_on:
       synapse:
         condition: service_started
-{% endif %}
+{% endfor %}
 
 networks:
-  # Fixed Docker network name so roles/caddy can attach as external: matrix_base_default
   matrix_app:
     name: matrix_base_default
     driver: bridge

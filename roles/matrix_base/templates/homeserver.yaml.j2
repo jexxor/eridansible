@@ -12,7 +12,7 @@ listeners:
     resources:
       - names: [client, federation]
         compress: false
-{% if matrix_base_workers_federation_sender | bool %}
+{% if (matrix_base_workers_effective | default([]) | selectattr('worker_app', 'equalto', 'synapse.app.federation_sender') | list | length) > 0 %}
   - port: 9093
     tls: false
     bind_addresses: ['0.0.0.0']
@@ -42,7 +42,7 @@ media_store_path: /data/media_store
 
 {% if matrix_base_media_retention_remote_lifetime | length > 0 %}
 media_retention_rules:
-  remote_media_lifetime: {{ matrix_base_media_retention_remote_lifetime }}
+  remote_media_lifetime: "{{ matrix_base_media_retention_remote_lifetime }}"
 {% endif %}
 
 signing_key_path: "/data/{{ matrix_base_server_name }}.signing.key"
@@ -53,12 +53,12 @@ registration_shared_secret: "{{ matrix_base_registration_shared_secret }}"
 registration_requires_token: true
 {% endif %}
 
-report_stats: {% if matrix_base_report_stats | bool %}true{% else %}false{% endif %}
+report_stats: {{ matrix_base_report_stats | bool | ternary('true', 'false') }}
 
 suppress_key_server_warning: true
 
-allow_public_rooms_without_auth: {% if matrix_base_allow_public_rooms_without_auth | bool %}true{% else %}false{% endif %}
-allow_public_rooms_over_federation: {% if matrix_base_allow_public_rooms_over_federation | bool %}true{% else %}false{% endif %}
+allow_public_rooms_without_auth: {{ matrix_base_allow_public_rooms_without_auth | bool | ternary('true', 'false') }}
+allow_public_rooms_over_federation: {{ matrix_base_allow_public_rooms_over_federation | bool | ternary('true', 'false') }}
 
 {% if matrix_base_federation_domain_whitelist | length > 0 %}
 federation_domain_whitelist:
@@ -73,7 +73,7 @@ turn_uris:
   - "{{ u }}"
 {% endfor %}
 turn_shared_secret: "{{ matrix_base_turn_shared_secret }}"
-turn_allow_guests: {% if matrix_base_turn_allow_guests | bool %}true{% else %}false{% endif %}
+turn_allow_guests: {{ matrix_base_turn_allow_guests | bool | ternary('true', 'false') }}
 {% endif %}
 
 {% if matrix_base_auto_join_rooms | length > 0 %}
@@ -84,9 +84,9 @@ auto_join_rooms:
 {% endif %}
 
 user_directory:
-  enabled: {% if matrix_base_user_directory_enabled | bool %}true{% else %}false{% endif %}
-  search_all_users: {% if matrix_base_user_directory_search_all_users | bool %}true{% else %}false{% endif %}
-  prefer_local_users: {% if matrix_base_user_directory_prefer_local_users | bool %}true{% else %}false{% endif %}
+  enabled: {{ matrix_base_user_directory_enabled | bool | ternary('true', 'false') }}
+  search_all_users: {{ matrix_base_user_directory_search_all_users | bool | ternary('true', 'false') }}
+  prefer_local_users: {{ matrix_base_user_directory_prefer_local_users | bool | ternary('true', 'false') }}
 
 {% if matrix_base_matrix_rtc_livekit_url | length > 0 %}
 matrix_rtc:
@@ -133,10 +133,14 @@ experimental_features:
 {% endif %}
 {% endif %}
 
-{% if matrix_base_workers_federation_sender | bool %}
+{% set _workers = matrix_base_workers_effective | default([]) %}
+{% set _fed_senders = _workers | selectattr('worker_app', 'equalto', 'synapse.app.federation_sender') | list %}
+{% if _fed_senders | length > 0 %}
 send_federation: false
 federation_sender_instances:
-  - federation_sender1
+{% for w in _fed_senders %}
+  - {{ w.name }}
+{% endfor %}
 
 worker_replication_secret: "{{ matrix_base_worker_replication_secret }}"
 
