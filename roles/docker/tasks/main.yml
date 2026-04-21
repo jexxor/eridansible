@@ -1,38 +1,7 @@
 ---
-- name: Set Docker package lists (by OS)
-  ansible.builtin.set_fact:
-    docker_debian_packages: >-
-      {{
-        ['docker.io']
-        + (docker_install_compose | bool | ternary(['docker-compose-plugin'], []))
-      }}
-    docker_arch_packages: >-
-      {{
-        ['docker']
-        + (docker_install_compose | bool | ternary(['docker-compose'], []))
-      }}
-
-- name: Install Docker (Debian/Ubuntu)
-  ansible.builtin.include_tasks: install_debian.yml
-  when:
-    - docker_install | bool
-    - ansible_facts.os_family == 'Debian'
-
-- name: Install Docker (Arch Linux)
-  ansible.builtin.include_tasks: install_archlinux.yml
-  when:
-    - docker_install | bool
-    - ansible_facts.distribution == 'Archlinux'
-
-- name: Fail on unsupported distro
-  ansible.builtin.fail:
-    msg: >-
-      Docker role does not yet support {{ ansible_facts.distribution }}
-      (os_family={{ ansible_facts.os_family }}). Add install tasks for this distro.
-  when:
-    - docker_install | bool
-    - ansible_facts.os_family != 'Debian'
-    - ansible_facts.distribution != 'Archlinux'
+- name: Install Docker (Debian)
+  ansible.builtin.include_tasks: install.yml
+  when: docker_install | bool
 
 - name: Enable and start Docker service
   ansible.builtin.service:

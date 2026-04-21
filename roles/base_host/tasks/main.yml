@@ -21,7 +21,7 @@
 
 - name: Set hostname
   ansible.builtin.hostname:
-    name: "{{ ansible_hostname }}"
+    name: "{{ ansible_facts['hostname'] }}"
 
 - name: Enable and start the ssh service on specified port
   ansible.builtin.systemd:
@@ -56,7 +56,7 @@
     - name: Ensure swapfile is enabled at boot
       ansible.builtin.mount:
         name: "none"
-        device: "{{ base_host_swapfile_path }}"
+        src: "{{ base_host_swapfile_path }}"
         fstype: "swap"
         opts: "sw"
         state: "present"

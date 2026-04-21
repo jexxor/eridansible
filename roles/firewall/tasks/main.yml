@@ -29,8 +29,9 @@
 - name: Allow TCP ports
   community.general.ufw:
     rule: allow
-    port: "{{ item }}"
+    port: "{{ (item.port if (item is mapping) else item) }}"
     proto: tcp
+    comment: "{{ item.comment | default(omit) }}"
   loop: "{{ firewall_allow_tcp | default([]) }}"
   when:
     - firewall_enable | bool
@@ -39,8 +40,9 @@
 - name: Allow UDP ports
   community.general.ufw:
     rule: allow
-    port: "{{ item }}"
+    port: "{{ (item.port if (item is mapping) else item) }}"
     proto: udp
+    comment: "{{ item.comment | default(omit) }}"
   loop: "{{ firewall_allow_udp | default([]) }}"
   when:
     - firewall_enable | bool

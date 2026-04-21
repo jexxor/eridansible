@@ -1,0 +1,40 @@
+base_host_swapfile_size_mb: "{{ ansible_facts['memtotal_mb'] }}"
+base_host_swapfile_path: "/swapfile"
+
+base_host_ssh_port: 2222
+
+# Firewall role
+firewall_enable: true
+firewall_allow_tcp:
+  - port: 61616
+    comment: SSH
+  - port: 8448
+    comment: Matrix federation
+  - port: 80
+    comment: HTTP
+  - port: 3478
+    comment: TURN TCP
+  - port: 5349
+    comment: TURNS TCP
+  - port: 7881
+    comment: LiveKit WebSocket fallback
+  - port: 443
+    comment: Xray inbound
+
+firewall_allow_udp:
+  - port: 50100:50200
+    comment: LiveKit WebRTC media
+  - port: 3478
+    comment: TURN UDP
+  - port: 5349
+    comment: TURNS UDP
+  - port: 49152:65535
+    comment: Coturn + LiveKit media UDP
+
+# Docker role
+docker_install: true
+docker_enable_service: true
+docker_install_compose: true
+docker_users:
+  - "{{ ansible_user_id }}"
+  

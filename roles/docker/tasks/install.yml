@@ -4,8 +4,10 @@
     update_cache: true
     cache_valid_time: 3600
 
-- name: Install Docker packages (Debian/Ubuntu)
+- name: Install Docker packages
   ansible.builtin.apt:
-    name: "{{ docker_debian_packages }}"
+    name:
+      - docker.io
+      - "{{ 'docker-compose' if (docker_install_compose | bool) else omit }}"
     state: present
 
