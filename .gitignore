@@ -14,4 +14,9 @@ inventories/**/files/*.key
 
 .vault_pass
 .vault_pass.txt
-inventories/demo/vault_password.demo
+inventories/e2e/vault_password
+
+/.venv
+/venv
+__pycache__/
+
