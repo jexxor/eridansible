@@ -9,7 +9,6 @@ datastore_postgres_user: app
 datastore_postgres_db: app
 datastore_postgres_password: ""
 
-# Bind published ports (host:container). Use 127.0.0.1 for localhost-only.
 datastore_postgres_host_port: "5432"
 datastore_redis_host_port: "6379"
 

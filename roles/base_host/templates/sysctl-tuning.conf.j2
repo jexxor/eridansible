@@ -1,4 +1,3 @@
-# Managed by Ansible (roles/base_host)
 {% set _sysctl = base_host_sysctl_settings | combine(base_host_sysctl_extra) %}
 {% for key, value in _sysctl.items() | sort %}
 {{ key }} = {{ value }}

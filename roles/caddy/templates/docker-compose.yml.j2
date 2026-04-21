@@ -12,7 +12,23 @@ services:
       - caddy_data:/data
       - caddy_config:/config
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+{% if matrix_livekit_enable | default(false) | bool %}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+{% endif %}
+{% if matrix_base_enable | bool %}
+    networks:
+      - default
+      - matrix_base_net
+{% endif %}
 
 volumes:
   caddy_data: {}
   caddy_config: {}
+
+{% if matrix_base_enable | bool %}
+networks:
+  matrix_base_net:
+    external: true
+    name: matrix_base_default
+{% endif %}

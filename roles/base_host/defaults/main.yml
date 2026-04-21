@@ -2,13 +2,10 @@
 base_host_swapfile_size_mb: "{{ ansible_memtotal_mb }}"
 base_host_swapfile_path: "/swapfile"
 
-# Install /etc/security/limits.d and /etc/sysctl.d tuning (high connection / media workloads).
 base_host_sys_tuning_enable: true
 
-# PAM limits (applies to new login sessions after deploy).
 base_host_limits_nofile: "1048576"
 
-# Sysctl defaults; inventory may set base_host_sysctl_extra to merge overrides per key.
 base_host_sysctl_extra: {}
 
 base_host_sysctl_settings:

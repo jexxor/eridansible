@@ -26,9 +26,9 @@
     mode: "0644"
   when: caddy_enable | bool
 
-- name: Install Caddyfile
-  ansible.builtin.copy:
-    src: caddy/Caddyfile
+- name: Render Caddyfile
+  ansible.builtin.template:
+    src: Caddyfile.j2
     dest: "{{ caddy_root }}/caddy/Caddyfile"
     owner: root
     group: root

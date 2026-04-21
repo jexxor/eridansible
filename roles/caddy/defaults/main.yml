@@ -2,8 +2,21 @@
 caddy_enable: true
 caddy_root: /opt/caddy
 
-caddy_compose_filename: compose.yml
+caddy_compose_filename: docker-compose.yml
 
 caddy_compose_ports:
   - "127.0.0.1:8080:80"
   - "127.0.0.1:8443:443"
+
+caddy_tls_mode: internal
+caddy_tls_domain: ""
+caddy_acme_email: ""
+
+caddy_chat_hostname: ""
+caddy_apex_hostname: ""
+
+matrix_base_enable: false
+
+matrix_mas_enable: false
+matrix_livekit_enable: false
+matrix_element_call_enable: false

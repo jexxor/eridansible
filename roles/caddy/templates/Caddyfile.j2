@@ -1,0 +1,92 @@
+{% set _tls = caddy_tls_mode | default('internal') %}
+{% set _acme_ready = (_tls == 'acme') and (caddy_tls_domain | default('') | length > 0) and (caddy_acme_email | default('') | length > 0) %}
+
+{% if matrix_base_enable | bool %}
+(matrix_routes) {
+{% if matrix_mas_enable | default(false) | bool %}
+  handle /auth/* {
+    reverse_proxy mas:8080
+  }
+{% endif %}
+{% if matrix_livekit_enable | default(false) | bool %}
+  handle /livekit/jwt* {
+    reverse_proxy livekit-jwt:8080
+  }
+  handle_path /livekit/sfu* {
+    reverse_proxy host.docker.internal:7880
+  }
+{% endif %}
+  handle /_matrix/* {
+    reverse_proxy synapse:8008
+  }
+  handle /_synapse/* {
+    reverse_proxy synapse:8008
+  }
+  handle {
+    reverse_proxy element-web:80
+  }
+}
+
+{% if _acme_ready %}
+{{ caddy_tls_domain }} {
+  import matrix_routes
+  tls {{ caddy_acme_email }}
+}
+{% elif _tls != 'off' %}
+{{ matrix_base_server_name }} {
+  tls internal
+  import matrix_routes
+}
+{% if caddy_chat_hostname | default('') | length > 0 %}
+{{ caddy_chat_hostname }} {
+  tls internal
+{% if matrix_element_call_enable | default(false) | bool %}
+  handle /call {
+    redir /call/ 308
+  }
+  handle_path /call/* {
+    reverse_proxy element-call:8080
+  }
+{% endif %}
+  handle {
+    respond "Stub host — open Element at {{ matrix_base_public_baseurl }}."
+  }
+}
+{% endif %}
+{% if caddy_apex_hostname | default('') | length > 0 %}
+{{ caddy_apex_hostname }} {
+  tls internal
+  redir {{ matrix_base_public_baseurl }}/ 302
+}
+{% endif %}
+{% else %}
+:80 {
+  import matrix_routes
+}
+{% endif %}
+
+{% else %}
+(plain_ok) {
+  respond "ok"
+}
+
+{% if _acme_ready %}
+{{ caddy_tls_domain }} {
+  import plain_ok
+  tls {{ caddy_acme_email }}
+}
+{% elif _tls != 'off' %}
+:80 {
+  import plain_ok
+}
+:443 {
+  tls internal
+  import plain_ok
+}
+{% else %}
+:80 {
+  import plain_ok
+}
+{% endif %}
+
+{% endif %}
