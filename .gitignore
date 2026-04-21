@@ -1,5 +1,7 @@
 /.vagrant
-/.ansible**
+/.ansible-tmp
+/.ansible
+
 
 .env
 .env.local

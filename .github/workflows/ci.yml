@@ -27,4 +27,4 @@ jobs:
         run: ansible-galaxy collection install -r collections/requirements.yml -p .ansible/collections
 
       - name: Run ansible-lint
-        run: ansible-lint ./roles/ ./playbooks/ --config .ansible-lint
+        run: ansible-lint ./roles/ ./playbooks/
