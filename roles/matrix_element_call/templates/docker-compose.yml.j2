@@ -1,0 +1,13 @@
+services:
+  element-call:
+    image: {{ matrix_element_call_image }}
+    restart: unless-stopped
+    volumes:
+      - ./element-call-config.json:/app/config.json:ro
+    networks:
+      - matrix_base_net
+
+networks:
+  matrix_base_net:
+    external: true
+    name: matrix_base_default

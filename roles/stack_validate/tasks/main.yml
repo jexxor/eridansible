@@ -1,0 +1,156 @@
+---
+- name: Black-box stack validation
+  when: stack_validate_enable | bool
+  block:
+    - name: Ensure curl is installed for HTTP checks
+      ansible.builtin.package:
+        name: "{{ stack_validate_curl_package }}"
+        state: present
+      become: true
+
+    - name: Derive Matrix public URL parts for Caddy SNI checks
+      when: matrix_base_enable | default(false) | bool
+      ansible.builtin.set_fact:
+        stack_validate_matrix_https_origin: "{{ matrix_base_public_baseurl | regex_replace('/$', '') }}"
+        stack_validate_pub_authority: "{{ matrix_base_public_baseurl | regex_replace('^https?://([^/]+).*$', '\\1') }}"
+
+    - name: Split vhost and vport from public Matrix URL
+      when: matrix_base_enable | default(false) | bool
+      ansible.builtin.set_fact:
+        stack_validate_vhost: "{{ stack_validate_pub_authority.split(':') | first }}"
+        stack_validate_vport: >-
+          {{ (stack_validate_pub_authority.split(':') | length > 1)
+             | ternary(stack_validate_pub_authority.split(':') | last, '443') }}
+
+    - name: Choose local Caddy TCP port for connect-to routing
+      when: matrix_base_enable | default(false) | bool
+      ansible.builtin.set_fact:
+        stack_validate_caddy_port: >-
+          {{ (stack_validate_caddy_local_port | default('') | string | length > 0)
+             | ternary(stack_validate_caddy_local_port, stack_validate_vport) }}
+
+    - name: Derive chat host URL for Element Call checks
+      when:
+        - matrix_base_enable | default(false) | bool
+        - caddy_chat_hostname | default('') | length > 0
+      ansible.builtin.set_fact:
+        stack_validate_chat_authority: "{{ caddy_chat_hostname }}:{{ stack_validate_vport }}"
+        stack_validate_chat_origin: "https://{{ caddy_chat_hostname }}:{{ stack_validate_vport }}"
+
+    - name: Synapse client API reachable through Caddy (TLS, correct vhost)
+      when: matrix_base_enable | default(false) | bool
+      ansible.builtin.shell: |
+        set -euo pipefail
+        curl -kfsS --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          --connect-to "{{ stack_validate_pub_authority }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}" \
+          "{{ stack_validate_matrix_https_origin }}/_matrix/client/versions" \
+          | python3 -c "import json,sys; d=json.load(sys.stdin); assert 'versions' in d"
+      register: stack_validate_synapse
+      until: stack_validate_synapse.rc == 0
+      retries: "{{ stack_validate_retries }}"
+      delay: "{{ stack_validate_delay }}"
+      changed_when: false
+
+    - name: Element Web reachable through Caddy
+      when: matrix_base_enable | default(false) | bool
+      ansible.builtin.shell: |
+        set -euo pipefail
+        curl -kfsS --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          --connect-to "{{ stack_validate_pub_authority }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}" \
+          "{{ stack_validate_matrix_https_origin }}/" \
+          | python3 -c "import sys; b=sys.stdin.buffer.read(8000).lower(); assert b'html' in b"
+      register: stack_validate_element
+      until: stack_validate_element.rc == 0
+      retries: "{{ stack_validate_retries }}"
+      delay: "{{ stack_validate_delay }}"
+      changed_when: false
+
+    - name: MAS OIDC discovery document reachable through Caddy
+      when:
+        - matrix_base_enable | default(false) | bool
+        - matrix_mas_enable | default(false) | bool
+      ansible.builtin.shell: |
+        set -euo pipefail
+        curl -kfsS --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          --connect-to "{{ stack_validate_pub_authority }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}" \
+          "{{ stack_validate_matrix_https_origin }}/auth/.well-known/openid-configuration" \
+          | python3 -c "import json,sys; d=json.load(sys.stdin); assert d.get('issuer')"
+      register: stack_validate_mas
+      until: stack_validate_mas.rc == 0
+      retries: "{{ stack_validate_retries }}"
+      delay: "{{ stack_validate_delay }}"
+      changed_when: false
+
+    - name: LiveKit JWT path responds through Caddy (non-fatal HTTP codes)
+      when:
+        - matrix_base_enable | default(false) | bool
+        - matrix_livekit_enable | default(false) | bool
+      ansible.builtin.shell: |
+        set -euo pipefail
+        code=$(curl -ksS -o /dev/null -w '%{http_code}' --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          --connect-to "{{ stack_validate_pub_authority }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}" \
+          "{{ stack_validate_matrix_https_origin }}/livekit/jwt/")
+        case "$code" in 200|401|404|405) exit 0 ;; *) echo "unexpected HTTP $code" >&2; exit 1 ;; esac
+      register: stack_validate_livekit_jwt
+      until: stack_validate_livekit_jwt.rc == 0
+      retries: "{{ stack_validate_retries }}"
+      delay: "{{ stack_validate_delay }}"
+      changed_when: false
+
+    - name: LiveKit SFU TCP port accepts connections on loopback
+      when: matrix_livekit_enable | default(false) | bool
+      ansible.builtin.wait_for:
+        host: "{{ stack_validate_loopback }}"
+        port: 7880
+        delay: 3
+        timeout: "{{ (stack_validate_retries | int * stack_validate_delay | int) + 60 }}"
+
+    - name: Element Call static app reachable on chat vhost
+      when:
+        - matrix_base_enable | default(false) | bool
+        - matrix_element_call_enable | default(false) | bool
+        - caddy_chat_hostname | default('') | length > 0
+      ansible.builtin.shell: |
+        set -euo pipefail
+        curl -kfsS --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          --connect-to "{{ stack_validate_chat_authority }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}" \
+          "{{ stack_validate_chat_origin }}/call/" \
+          | python3 -c "import sys; b=sys.stdin.buffer.read(12000).lower(); assert b'html' in b"
+      register: stack_validate_element_call
+      until: stack_validate_element_call.rc == 0
+      retries: "{{ stack_validate_retries }}"
+      delay: "{{ stack_validate_delay }}"
+      changed_when: false
+
+    - name: Coturn TURN listening on loopback
+      when: matrix_coturn_enable | default(false) | bool
+      ansible.builtin.wait_for:
+        host: "{{ stack_validate_loopback }}"
+        port: 3478
+        delay: 3
+        timeout: "{{ (stack_validate_retries | int * stack_validate_delay | int) + 60 }}"
+
+    - name: Maubot management port responds on loopback
+      when: matrix_maubot_enable | default(false) | bool
+      ansible.builtin.shell: |
+        set -euo pipefail
+        code=$(curl -gsS -o /dev/null -w '%{http_code}' --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          "{{ (matrix_maubot_public_url | regex_replace('/$', '')) }}/")
+        case "$code" in 200|302|401|404) exit 0 ;; *) echo "unexpected HTTP $code" >&2; exit 1 ;; esac
+      register: stack_validate_maubot
+      until: stack_validate_maubot.rc == 0
+      retries: "{{ stack_validate_retries }}"
+      delay: "{{ stack_validate_delay }}"
+      changed_when: false
+
+    - name: 3x-ui panel port responds on loopback
+      ansible.builtin.shell: |
+        set -euo pipefail
+        code=$(curl -gsS -o /dev/null -w '%{http_code}' --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          "http://{{ stack_validate_loopback }}:{{ x_ui_panel_host_port | string }}/")
+        case "$code" in 200|302|301|401) exit 0 ;; *) echo "unexpected HTTP $code" >&2; exit 1 ;; esac
+      register: stack_validate_xui
+      until: stack_validate_xui.rc == 0
+      retries: "{{ stack_validate_retries }}"
+      delay: "{{ stack_validate_delay }}"
+      changed_when: false

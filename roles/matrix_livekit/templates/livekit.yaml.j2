@@ -1,0 +1,11 @@
+port: 7880
+bind_addresses:
+  - "0.0.0.0"
+rtc:
+  tcp_port: {{ matrix_livekit_rtc_tcp_port }}
+  port_range_start: {{ matrix_livekit_rtc_udp_start }}
+  port_range_end: {{ matrix_livekit_rtc_udp_end }}
+keys:
+  {{ matrix_livekit_api_key }}: {{ matrix_livekit_api_secret }}
+logging:
+  json: true

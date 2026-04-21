@@ -1,0 +1,25 @@
+services:
+  livekit:
+    image: {{ matrix_livekit_server_image }}
+    restart: unless-stopped
+    network_mode: host
+    command: ["--config", "/etc/livekit.yaml"]
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+
+  livekit-jwt:
+    image: {{ matrix_livekit_jwt_image }}
+    restart: unless-stopped
+    environment:
+      LIVEKIT_JWT_BIND: ":8080"
+      LIVEKIT_URL: "{{ (matrix_livekit_jwt_wss_url | default('') | length > 0) | ternary(matrix_livekit_jwt_wss_url, (matrix_base_public_baseurl | replace('https://', 'wss://') | replace('http://', 'ws://')) ~ '/livekit/sfu') }}"
+      LIVEKIT_KEY: "{{ matrix_livekit_api_key }}"
+      LIVEKIT_SECRET: "{{ matrix_livekit_api_secret }}"
+      LIVEKIT_FULL_ACCESS_HOMESERVERS: "{{ matrix_base_server_name }}"
+    networks:
+      - matrix_base_net
+
+networks:
+  matrix_base_net:
+    external: true
+    name: matrix_base_default

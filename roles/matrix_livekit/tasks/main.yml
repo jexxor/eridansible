@@ -1,0 +1,57 @@
+---
+- name: LiveKit + lk-jwt-service
+  when: matrix_livekit_enable | bool
+  block:
+    - name: Require LiveKit API secret
+      ansible.builtin.assert:
+        that:
+          - matrix_livekit_api_secret | string | length > 0
+        fail_msg: Set matrix_livekit_api_secret (matches livekit.yaml keys).
+
+    - name: Ensure LiveKit project directory exists
+      ansible.builtin.file:
+        path: "{{ matrix_livekit_root }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render livekit.yaml
+      ansible.builtin.template:
+        src: livekit.yaml.j2
+        dest: "{{ matrix_livekit_root }}/livekit.yaml"
+        owner: root
+        group: root
+        mode: "0640"
+
+    - name: Render LiveKit Compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ matrix_livekit_root }}/{{ matrix_livekit_compose_filename }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Bring LiveKit stack up
+      ansible.builtin.command:
+        cmd: "docker-compose -f {{ matrix_livekit_compose_filename }} up -d"
+        chdir: "{{ matrix_livekit_root }}"
+      register: lk_up
+      changed_when: >-
+        ('Creating' in (lk_up.stdout ~ lk_up.stderr))
+        or ('Recreating' in (lk_up.stdout ~ lk_up.stderr))
+        or ('Starting' in (lk_up.stdout ~ lk_up.stderr))
+
+    - name: Allow LiveKit RTC ports on firewall
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+        comment: "{{ item.comment }}"
+      loop:
+        - { port: 7880, proto: tcp, comment: LiveKit HTTP }
+        - { port: "{{ matrix_livekit_rtc_tcp_port }}", proto: tcp, comment: LiveKit RTC TCP }
+        - { port: "{{ matrix_livekit_rtc_udp_start }}:{{ matrix_livekit_rtc_udp_end }}", proto: udp, comment: LiveKit RTC UDP }
+      when:
+        - matrix_livekit_open_firewall | default(true) | bool
+        - firewall_enable | default(true) | bool

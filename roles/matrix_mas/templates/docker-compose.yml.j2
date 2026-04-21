@@ -1,0 +1,19 @@
+services:
+  mas:
+    image: {{ matrix_mas_image }}
+    restart: unless-stopped
+    environment:
+      MAS_CONFIG: /data/config.yaml
+    volumes:
+      - ./data:/data:ro
+    networks:
+      - datastores_net
+      - matrix_base_net
+
+networks:
+  datastores_net:
+    external: true
+    name: datastores_default
+  matrix_base_net:
+    external: true
+    name: matrix_base_default

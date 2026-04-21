@@ -1,0 +1,23 @@
+---
+matrix_mas_enable: false
+matrix_mas_root: /opt/matrix_mas
+matrix_mas_compose_filename: docker-compose.yml
+matrix_mas_image: ghcr.io/element-hq/matrix-authentication-service:latest
+
+matrix_mas_http_public_base: ""
+matrix_mas_http_issuer: ""
+
+matrix_mas_encryption_secret: ""
+matrix_mas_rsa_private_key_pem: ""
+
+matrix_mas_matrix_secret: ""
+matrix_mas_admin_token: ""
+
+matrix_mas_synapse_client_id: "00000000000000000000000001"
+matrix_mas_synapse_client_secret: ""
+matrix_mas_compat_client_id: "00000000000000000000000002"
+matrix_mas_compat_client_secret: ""
+
+matrix_mas_policy_admin_users: []
+
+matrix_mas_database_password: ""

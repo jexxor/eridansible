@@ -1,0 +1,12 @@
+---
+stack_validate_enable: true
+
+stack_validate_loopback: "127.0.0.1"
+# When empty, use the port from matrix_base_public_baseurl (e.g. 8443).
+stack_validate_caddy_local_port: ""
+
+stack_validate_curl_connect_timeout: "15"
+stack_validate_retries: 24
+stack_validate_delay: 5
+
+stack_validate_curl_package: curl

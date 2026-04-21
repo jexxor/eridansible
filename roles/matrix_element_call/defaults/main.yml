@@ -1,0 +1,5 @@
+---
+matrix_element_call_enable: false
+matrix_element_call_root: /opt/matrix_element_call
+matrix_element_call_compose_filename: docker-compose.yml
+matrix_element_call_image: ghcr.io/element-hq/element-call:latest

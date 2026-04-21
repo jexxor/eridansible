@@ -1,0 +1,18 @@
+---
+matrix_livekit_enable: false
+matrix_livekit_root: /opt/matrix_livekit
+matrix_livekit_compose_filename: docker-compose.yml
+matrix_livekit_server_image: livekit/livekit-server:latest
+matrix_livekit_jwt_image: ghcr.io/element-hq/lk-jwt-service:latest
+
+matrix_livekit_api_key: matrixrtc
+matrix_livekit_api_secret: ""
+
+# Public WSS URL clients use to reach LiveKit SFU (default: wss://<matrix_base_public_baseurl host>/livekit/sfu).
+matrix_livekit_jwt_wss_url: ""
+
+matrix_livekit_rtc_tcp_port: 7881
+matrix_livekit_rtc_udp_start: 50100
+matrix_livekit_rtc_udp_end: 50200
+
+matrix_livekit_open_firewall: true

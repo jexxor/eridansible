@@ -1,0 +1,8 @@
+---
+matrix_maubot_enable: false
+matrix_maubot_root: /opt/matrix_maubot
+matrix_maubot_compose_filename: docker-compose.yml
+matrix_maubot_image: dock.mau.dev/maubot/maubot:latest
+
+matrix_maubot_public_url: "http://127.0.0.1:29316"
+matrix_maubot_admins: []

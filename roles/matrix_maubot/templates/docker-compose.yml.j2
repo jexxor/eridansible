@@ -1,0 +1,12 @@
+services:
+  maubot:
+    image: {{ matrix_maubot_image }}
+    restart: unless-stopped
+    volumes:
+      - ./config.yaml:/data/config.yaml:ro
+      - maubot_data:/data
+    ports:
+      - "127.0.0.1:29316:29316"
+
+volumes:
+  maubot_data: {}

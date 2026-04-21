@@ -1,0 +1,44 @@
+---
+- name: Element Call web app
+  when: matrix_element_call_enable | bool
+  block:
+    - name: Require LiveKit JWT URL for Element Call
+      ansible.builtin.assert:
+        that:
+          - matrix_base_element_call_livekit_url | string | length > 0
+        fail_msg: >-
+          Set matrix_base_element_call_livekit_url (e.g. https://matrix.example:8443/livekit/jwt) when matrix_element_call_enable is true.
+
+    - name: Ensure Element Call directory exists
+      ansible.builtin.file:
+        path: "{{ matrix_element_call_root }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render Element Call config
+      ansible.builtin.template:
+        src: element-call-config.json.j2
+        dest: "{{ matrix_element_call_root }}/element-call-config.json"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Render Element Call Compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ matrix_element_call_root }}/{{ matrix_element_call_compose_filename }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Bring Element Call up
+      ansible.builtin.command:
+        cmd: "docker-compose -f {{ matrix_element_call_compose_filename }} up -d"
+        chdir: "{{ matrix_element_call_root }}"
+      register: ec_up
+      changed_when: >-
+        ('Creating' in (ec_up.stdout ~ ec_up.stderr))
+        or ('Recreating' in (ec_up.stdout ~ ec_up.stderr))
+        or ('Starting' in (ec_up.stdout ~ ec_up.stderr))

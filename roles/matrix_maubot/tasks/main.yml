@@ -1,0 +1,44 @@
+---
+- name: Maubot (optional)
+  when: matrix_maubot_enable | bool
+  block:
+    - name: Require at least one admin when Maubot is enabled
+      ansible.builtin.assert:
+        that:
+          - matrix_maubot_admins | length > 0
+        fail_msg: >-
+          Set matrix_maubot_admins (list of Matrix IDs) when matrix_maubot_enable is true.
+
+    - name: Ensure Maubot project directory exists
+      ansible.builtin.file:
+        path: "{{ matrix_maubot_root }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render Maubot config
+      ansible.builtin.template:
+        src: config.yaml.j2
+        dest: "{{ matrix_maubot_root }}/config.yaml"
+        owner: root
+        group: root
+        mode: "0640"
+
+    - name: Render Maubot Compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ matrix_maubot_root }}/{{ matrix_maubot_compose_filename }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Bring Maubot up
+      ansible.builtin.command:
+        cmd: "docker-compose -f {{ matrix_maubot_compose_filename }} up -d"
+        chdir: "{{ matrix_maubot_root }}"
+      register: matrix_maubot_up
+      changed_when: >-
+        ('Creating' in (matrix_maubot_up.stdout ~ matrix_maubot_up.stderr))
+        or ('Recreating' in (matrix_maubot_up.stdout ~ matrix_maubot_up.stderr))
+        or ('Starting' in (matrix_maubot_up.stdout ~ matrix_maubot_up.stderr))

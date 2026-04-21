@@ -1,0 +1,80 @@
+---
+- name: Matrix Authentication Service (MAS)
+  when: matrix_mas_enable | bool
+  block:
+    - name: Require MAS secrets
+      ansible.builtin.assert:
+        that:
+          - matrix_mas_encryption_secret | string | length >= 32
+          - matrix_mas_rsa_private_key_pem | string | length > 0
+          - matrix_mas_matrix_secret | string | length > 0
+          - matrix_mas_admin_token | string | length > 0
+          - matrix_mas_synapse_client_secret | string | length > 0
+          - matrix_mas_compat_client_secret | string | length > 0
+        fail_msg: >-
+          Set matrix_mas_encryption_secret (32+ chars), matrix_mas_rsa_private_key_pem (PEM),
+          matrix_mas_matrix_secret, matrix_mas_admin_token, matrix_mas_synapse_client_secret, matrix_mas_compat_client_secret.
+
+    - name: Ensure MAS directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ matrix_mas_root }}"
+        - "{{ matrix_mas_root }}/data"
+
+    - name: Wait for datastores Postgres
+      ansible.builtin.shell: |
+        set -e
+        cd "{{ datastore_root }}"
+        docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
+          pg_isready -U "{{ datastore_postgres_user }}" -d postgres
+      register: mas_pg_ready
+      until: mas_pg_ready.rc == 0
+      retries: 36
+      delay: 5
+      changed_when: false
+
+    - name: Ensure MAS Postgres database exists
+      ansible.builtin.shell: |
+        set -e
+        cd "{{ datastore_root }}"
+        if docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
+          psql -U "{{ datastore_postgres_user }}" -d postgres -tAc \
+          "SELECT 1 FROM pg_database WHERE datname='mas'" | grep -q 1; then
+          exit 0
+        fi
+        docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
+          psql -U "{{ datastore_postgres_user }}" -d postgres -v ON_ERROR_STOP=1 \
+          -c "CREATE DATABASE mas OWNER {{ datastore_postgres_user }};"
+      register: mas_db_create
+      changed_when: "'CREATE DATABASE' in (mas_db_create.stdout | default(''))"
+
+    - name: Render MAS config
+      ansible.builtin.template:
+        src: config.yaml.j2
+        dest: "{{ matrix_mas_root }}/data/config.yaml"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Render MAS Compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ matrix_mas_root }}/{{ matrix_mas_compose_filename }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Bring MAS up
+      ansible.builtin.command:
+        cmd: "docker-compose -f {{ matrix_mas_compose_filename }} up -d"
+        chdir: "{{ matrix_mas_root }}"
+      register: mas_up
+      changed_when: >-
+        ('Creating' in (mas_up.stdout ~ mas_up.stderr))
+        or ('Recreating' in (mas_up.stdout ~ mas_up.stderr))
+        or ('Starting' in (mas_up.stdout ~ mas_up.stderr))

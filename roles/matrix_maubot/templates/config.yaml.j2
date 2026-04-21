@@ -1,0 +1,11 @@
+server:
+    hostname: 0.0.0.0
+    port: 29316
+    public_url: {{ matrix_maubot_public_url | to_json }}
+database: sqlite:///data/maubot.db
+logging:
+    level: INFO
+admins:
+{% for a in matrix_maubot_admins %}
+    - {{ a | to_json }}
+{% endfor %}
