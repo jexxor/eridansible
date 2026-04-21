@@ -5,15 +5,19 @@
     - name: Require MAS secrets
       ansible.builtin.assert:
         that:
-          - matrix_mas_encryption_secret | string | length >= 32
+          # Either 64 hex (MAS native) or legacy 32+ char passphrase (hashed to 64 hex in config template).
+          - >-
+              ((matrix_mas_encryption_secret | string | length == 64)
+               and (matrix_mas_encryption_secret is match('^[0-9a-fA-F]{64}$')))
+              or ((matrix_mas_encryption_secret | string | length) >= 32)
           - matrix_mas_rsa_private_key_pem | string | length > 0
           - matrix_mas_matrix_secret | string | length > 0
           - matrix_mas_admin_token | string | length > 0
           - matrix_mas_synapse_client_secret | string | length > 0
           - matrix_mas_compat_client_secret | string | length > 0
         fail_msg: >-
-          Set matrix_mas_encryption_secret (32+ chars), matrix_mas_rsa_private_key_pem (PEM),
-          matrix_mas_matrix_secret, matrix_mas_admin_token, matrix_mas_synapse_client_secret, matrix_mas_compat_client_secret.
+          Set matrix_mas_encryption_secret to 64 hex digits (openssl rand -hex 32) or any 32+ character secret
+          (the role derives a MAS-compatible key via SHA256 when not already 64 hex). Also set PEM and other MAS secrets listed in this role.
 
     - name: Ensure MAS directories exist
       ansible.builtin.file:
@@ -42,9 +46,11 @@
       ansible.builtin.shell: |
         set -e
         cd "{{ datastore_root }}"
-        if docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
+        result=$(docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
           psql -U "{{ datastore_postgres_user }}" -d postgres -tAc \
-          "SELECT 1 FROM pg_database WHERE datname='mas'" | grep -q 1; then
+          "SELECT 1 FROM pg_database WHERE datname='mas'")
+        result="${result//[$'\t\r\n ']/}"
+        if [ "$result" = "1" ]; then
           exit 0
         fi
         docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
@@ -59,7 +65,9 @@
         dest: "{{ matrix_mas_root }}/data/config.yaml"
         owner: root
         group: root
-        mode: "0600"
+        # MAS container runs non-root; 0600 root-owned files are unreadable inside the container.
+        mode: "0644"
+      tags: [config]
 
     - name: Render MAS Compose file
       ansible.builtin.template:
@@ -68,6 +76,7 @@
         owner: root
         group: root
         mode: "0644"
+      tags: [config]
 
     - name: Bring MAS up
       ansible.builtin.command:
@@ -78,3 +87,4 @@
         ('Creating' in (mas_up.stdout ~ mas_up.stderr))
         or ('Recreating' in (mas_up.stdout ~ mas_up.stderr))
         or ('Starting' in (mas_up.stdout ~ mas_up.stderr))
+      tags: [deploy]

@@ -17,6 +17,7 @@
     owner: root
     group: root
     mode: "0644"
+  tags: [config]
 
 - name: Pull 3x-ui image
   ansible.builtin.command:
@@ -24,6 +25,7 @@
     chdir: "{{ x_ui_root }}"
   when: x_ui_compose_pull_before_up | bool
   changed_when: false
+  tags: [deploy]
 
 - name: Bring 3x-ui up
   ansible.builtin.command:
@@ -34,3 +36,4 @@
     ('Creating' in (x_ui_compose_up.stdout ~ x_ui_compose_up.stderr))
     or ('Recreating' in (x_ui_compose_up.stdout ~ x_ui_compose_up.stderr))
     or ('Starting' in (x_ui_compose_up.stdout ~ x_ui_compose_up.stderr))
+  tags: [deploy]

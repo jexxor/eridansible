@@ -1,6 +1,10 @@
 {% set _pub = matrix_mas_http_public_base | default(matrix_base_public_baseurl ~ '/auth/', true) %}
 {% set _iss = matrix_mas_http_issuer | default(matrix_base_public_baseurl ~ '/auth', true) %}
 {% set _dbpw = matrix_mas_database_password | default(datastore_postgres_password, true) %}
+{# MAS requires 64 hex chars (32 bytes). Pass through if already that; else SHA256(passphrase) hex (stable per vault value). #}
+{% set _mas_enc_raw = matrix_mas_encryption_secret | string %}
+{% set _mas_enc_mas = ((_mas_enc_raw | length == 64) and (_mas_enc_raw is match('^[0-9a-fA-F]{64}$')))
+    | ternary(_mas_enc_raw | lower, _mas_enc_raw | hash('sha256')) %}
 http:
   public_base: {{ _pub | to_json }}
   issuer: {{ _iss | to_json }}
@@ -63,7 +67,7 @@ email:
   reply_to: '"MAS" <root@localhost>'
   transport: blackhole
 secrets:
-  encryption: {{ matrix_mas_encryption_secret | to_json }}
+  encryption: {{ _mas_enc_mas | to_json }}
   keys:
     - kid: ansible-rsa
       key: |

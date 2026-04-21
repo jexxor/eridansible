@@ -2,12 +2,15 @@
 - name: Maubot (optional)
   when: matrix_maubot_enable | bool
   block:
-    - name: Require at least one admin when Maubot is enabled
+    - name: Require management UI admins when Maubot is enabled
       ansible.builtin.assert:
         that:
+          - matrix_maubot_admins is mapping
           - matrix_maubot_admins | length > 0
+          - matrix_maubot_crypto_db_pickle_key | string | length >= 16
         fail_msg: >-
-          Set matrix_maubot_admins (list of Matrix IDs) when matrix_maubot_enable is true.
+          Set matrix_maubot_admins to a non-empty map of UI username -> plaintext password (not Matrix IDs),
+          and matrix_maubot_crypto_db_pickle_key (16+ chars), when matrix_maubot_enable is true.
 
     - name: Ensure Maubot project directory exists
       ansible.builtin.file:
@@ -17,13 +20,60 @@
         group: root
         mode: "0755"
 
+    - name: Ensure Maubot data directory exists
+      ansible.builtin.file:
+        path: "{{ matrix_maubot_root }}/data"
+        state: directory
+        owner: "{{ matrix_maubot_uid }}"
+        group: "{{ matrix_maubot_gid }}"
+        mode: "0755"
+
+    - name: Ensure Maubot state subdirectories exist (entrypoint also mkdirs; Ansible ensures host ownership)
+      ansible.builtin.file:
+        path: "{{ matrix_maubot_root }}/data/{{ item }}"
+        state: directory
+        owner: "{{ matrix_maubot_uid }}"
+        group: "{{ matrix_maubot_gid }}"
+        mode: "0755"
+      loop:
+        - plugins
+        - trash
+        - dbs
+
     - name: Render Maubot config
       ansible.builtin.template:
         src: config.yaml.j2
-        dest: "{{ matrix_maubot_root }}/config.yaml"
-        owner: root
-        group: root
+        dest: "{{ matrix_maubot_root }}/data/config.yaml"
+        owner: "{{ matrix_maubot_uid }}"
+        group: "{{ matrix_maubot_gid }}"
         mode: "0640"
+      tags: [config]
+
+    - name: Ensure Maubot data tree is writable by container user
+      ansible.builtin.file:
+        path: "{{ matrix_maubot_root }}/data"
+        state: directory
+        owner: "{{ matrix_maubot_uid }}"
+        group: "{{ matrix_maubot_gid }}"
+        recurse: true
+
+    - name: Pre-create empty SQLite database file if missing
+      ansible.builtin.copy:
+        content: ""
+        dest: "{{ matrix_maubot_root }}/data/maubot.db"
+        owner: "{{ matrix_maubot_uid }}"
+        group: "{{ matrix_maubot_gid }}"
+        mode: "0640"
+        force: false
+
+    - name: Normalize Maubot data ownership on host (covers root-owned dirs from older container runs)
+      ansible.builtin.command:
+        argv:
+          - chown
+          - -R
+          - "{{ matrix_maubot_uid }}:{{ matrix_maubot_gid }}"
+          - "{{ matrix_maubot_root }}/data"
+      changed_when: false
 
     - name: Render Maubot Compose file
       ansible.builtin.template:
@@ -32,6 +82,7 @@
         owner: root
         group: root
         mode: "0644"
+      tags: [config]
 
     - name: Bring Maubot up
       ansible.builtin.command:
@@ -42,3 +93,4 @@
         ('Creating' in (matrix_maubot_up.stdout ~ matrix_maubot_up.stderr))
         or ('Recreating' in (matrix_maubot_up.stdout ~ matrix_maubot_up.stderr))
         or ('Starting' in (matrix_maubot_up.stdout ~ matrix_maubot_up.stderr))
+      tags: [deploy]

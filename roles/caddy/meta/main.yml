@@ -1,5 +1,8 @@
 ---
 galaxy_info:
+  author: jexxor
   role_name: caddy
   description: Caddy reverse proxy via Docker Compose
+  license: MIT
+  min_ansible_version: "2.16"
 dependencies: []

@@ -4,7 +4,8 @@
 {% if matrix_base_enable | bool %}
 (matrix_routes) {
 {% if matrix_mas_enable | default(false) | bool %}
-  handle /auth/* {
+  # MAS listens on / (e.g. /.well-known/openid-configuration); strip /auth prefix before reverse_proxy.
+  handle_path /auth/* {
     reverse_proxy mas:8080
   }
 {% endif %}

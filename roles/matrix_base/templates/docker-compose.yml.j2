@@ -37,7 +37,6 @@ services:
     restart: unless-stopped
     user: "{{ matrix_base_synapse_uid }}:{{ matrix_base_synapse_gid }}"
     command:
-      - /start.py
       - run
       - -m
       - synapse.app.generic_worker
@@ -51,6 +50,8 @@ services:
     depends_on:
       synapse:
         condition: service_started
+    healthcheck:
+      disable: true
 {% endfor %}
 
 networks:

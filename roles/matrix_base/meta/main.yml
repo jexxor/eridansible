@@ -1,5 +1,8 @@
 ---
 galaxy_info:
+  author: jexxor
   role_name: matrix_base
   description: Synapse + Element Web, optional workers
+  license: MIT
+  min_ansible_version: "2.16"
 dependencies: []

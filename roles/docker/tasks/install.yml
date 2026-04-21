@@ -10,4 +10,3 @@
       - docker.io
       - "{{ 'docker-compose' if (docker_install_compose | bool) else omit }}"
     state: present
-

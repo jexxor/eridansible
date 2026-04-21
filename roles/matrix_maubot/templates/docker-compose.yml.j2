@@ -3,10 +3,7 @@ services:
     image: {{ matrix_maubot_image }}
     restart: unless-stopped
     volumes:
-      - ./config.yaml:/data/config.yaml:ro
-      - maubot_data:/data
+      # Single rw mount: entrypoint chowns /data and runs yq -i on config; sqlite and plugins live here too.
+      - "./data:/data:{{ matrix_maubot_data_volume_flags }}"
     ports:
       - "127.0.0.1:29316:29316"
-
-volumes:
-  maubot_data: {}

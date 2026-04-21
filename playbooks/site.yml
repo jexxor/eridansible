@@ -1,2 +1,3 @@
 ---
+# Tags are defined on roles in playbooks/bootstrap.yml (base, docker, matrix, proxy, config, deploy).
 - import_playbook: bootstrap.yml

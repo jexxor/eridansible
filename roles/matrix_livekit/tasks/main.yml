@@ -23,6 +23,7 @@
         owner: root
         group: root
         mode: "0640"
+      tags: [config]
 
     - name: Render LiveKit Compose file
       ansible.builtin.template:
@@ -31,6 +32,7 @@
         owner: root
         group: root
         mode: "0644"
+      tags: [config]
 
     - name: Bring LiveKit stack up
       ansible.builtin.command:
@@ -41,6 +43,7 @@
         ('Creating' in (lk_up.stdout ~ lk_up.stderr))
         or ('Recreating' in (lk_up.stdout ~ lk_up.stderr))
         or ('Starting' in (lk_up.stdout ~ lk_up.stderr))
+      tags: [deploy]
 
     - name: Allow LiveKit RTC ports on firewall
       community.general.ufw:

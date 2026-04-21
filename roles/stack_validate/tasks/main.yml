@@ -1,4 +1,6 @@
 ---
+# Shell tasks use bash (pipefail, arrays). When this role runs with become: false, Debian's /bin/sh is dash;
+# ensure the play sets ansible_shell_executable: /bin/bash (see playbooks/bootstrap.yml).
 - name: Black-box stack validation
   when: stack_validate_enable | bool
   block:
@@ -41,8 +43,15 @@
       when: matrix_base_enable | default(false) | bool
       ansible.builtin.shell: |
         set -euo pipefail
-        curl -kfsS --max-time "{{ stack_validate_curl_connect_timeout }}" \
-          --connect-to "{{ stack_validate_pub_authority }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}" \
+        # When URL port == published Caddy port, --resolve pins the name to loopback (no nip.io DNS on the VM). Else remap port with --connect-to.
+        # --compressed: piped curl does not decompress gzip by default; Python would get binary and json.loads would fail.
+        if [ "{{ stack_validate_caddy_port | string }}" = "{{ stack_validate_vport | string }}" ]; then
+          PINOPTS=(--resolve "{{ stack_validate_vhost }}:{{ stack_validate_vport }}:{{ stack_validate_loopback }}")
+        else
+          PINOPTS=(--connect-to "{{ stack_validate_vhost }}:{{ stack_validate_vport }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}")
+        fi
+        curl -4 -kfsS --compressed --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          "${PINOPTS[@]}" \
           "{{ stack_validate_matrix_https_origin }}/_matrix/client/versions" \
           | python3 -c "import json,sys; d=json.load(sys.stdin); assert 'versions' in d"
       register: stack_validate_synapse
@@ -55,8 +64,13 @@
       when: matrix_base_enable | default(false) | bool
       ansible.builtin.shell: |
         set -euo pipefail
-        curl -kfsS --max-time "{{ stack_validate_curl_connect_timeout }}" \
-          --connect-to "{{ stack_validate_pub_authority }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}" \
+        if [ "{{ stack_validate_caddy_port | string }}" = "{{ stack_validate_vport | string }}" ]; then
+          PINOPTS=(--resolve "{{ stack_validate_vhost }}:{{ stack_validate_vport }}:{{ stack_validate_loopback }}")
+        else
+          PINOPTS=(--connect-to "{{ stack_validate_vhost }}:{{ stack_validate_vport }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}")
+        fi
+        curl -4 -kfsS --compressed --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          "${PINOPTS[@]}" \
           "{{ stack_validate_matrix_https_origin }}/" \
           | python3 -c "import sys; b=sys.stdin.buffer.read(8000).lower(); assert b'html' in b"
       register: stack_validate_element
@@ -71,8 +85,13 @@
         - matrix_mas_enable | default(false) | bool
       ansible.builtin.shell: |
         set -euo pipefail
-        curl -kfsS --max-time "{{ stack_validate_curl_connect_timeout }}" \
-          --connect-to "{{ stack_validate_pub_authority }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}" \
+        if [ "{{ stack_validate_caddy_port | string }}" = "{{ stack_validate_vport | string }}" ]; then
+          PINOPTS=(--resolve "{{ stack_validate_vhost }}:{{ stack_validate_vport }}:{{ stack_validate_loopback }}")
+        else
+          PINOPTS=(--connect-to "{{ stack_validate_vhost }}:{{ stack_validate_vport }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}")
+        fi
+        curl -4 -kfsS --compressed --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          "${PINOPTS[@]}" \
           "{{ stack_validate_matrix_https_origin }}/auth/.well-known/openid-configuration" \
           | python3 -c "import json,sys; d=json.load(sys.stdin); assert d.get('issuer')"
       register: stack_validate_mas
@@ -87,8 +106,13 @@
         - matrix_livekit_enable | default(false) | bool
       ansible.builtin.shell: |
         set -euo pipefail
-        code=$(curl -ksS -o /dev/null -w '%{http_code}' --max-time "{{ stack_validate_curl_connect_timeout }}" \
-          --connect-to "{{ stack_validate_pub_authority }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}" \
+        if [ "{{ stack_validate_caddy_port | string }}" = "{{ stack_validate_vport | string }}" ]; then
+          PINOPTS=(--resolve "{{ stack_validate_vhost }}:{{ stack_validate_vport }}:{{ stack_validate_loopback }}")
+        else
+          PINOPTS=(--connect-to "{{ stack_validate_vhost }}:{{ stack_validate_vport }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}")
+        fi
+        code=$(curl -4 -ksS --compressed -o /dev/null -w '%{http_code}' --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          "${PINOPTS[@]}" \
           "{{ stack_validate_matrix_https_origin }}/livekit/jwt/")
         case "$code" in 200|401|404|405) exit 0 ;; *) echo "unexpected HTTP $code" >&2; exit 1 ;; esac
       register: stack_validate_livekit_jwt
@@ -112,8 +136,13 @@
         - caddy_chat_hostname | default('') | length > 0
       ansible.builtin.shell: |
         set -euo pipefail
-        curl -kfsS --max-time "{{ stack_validate_curl_connect_timeout }}" \
-          --connect-to "{{ stack_validate_chat_authority }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}" \
+        if [ "{{ stack_validate_caddy_port | string }}" = "{{ stack_validate_vport | string }}" ]; then
+          PINOPTS=(--resolve "{{ caddy_chat_hostname }}:{{ stack_validate_vport }}:{{ stack_validate_loopback }}")
+        else
+          PINOPTS=(--connect-to "{{ caddy_chat_hostname }}:{{ stack_validate_vport }}:{{ stack_validate_loopback }}:{{ stack_validate_caddy_port }}")
+        fi
+        curl -4 -kfsS --compressed --max-time "{{ stack_validate_curl_connect_timeout }}" \
+          "${PINOPTS[@]}" \
           "{{ stack_validate_chat_origin }}/call/" \
           | python3 -c "import sys; b=sys.stdin.buffer.read(12000).lower(); assert b'html' in b"
       register: stack_validate_element_call
@@ -135,7 +164,7 @@
       ansible.builtin.shell: |
         set -euo pipefail
         code=$(curl -gsS -o /dev/null -w '%{http_code}' --max-time "{{ stack_validate_curl_connect_timeout }}" \
-          "{{ (matrix_maubot_public_url | regex_replace('/$', '')) }}/")
+          "{{ (matrix_maubot_public_url | default('http://127.0.0.1:29316') | regex_replace('/$', '')) }}/")
         case "$code" in 200|302|401|404) exit 0 ;; *) echo "unexpected HTTP $code" >&2; exit 1 ;; esac
       register: stack_validate_maubot
       until: stack_validate_maubot.rc == 0
@@ -147,7 +176,7 @@
       ansible.builtin.shell: |
         set -euo pipefail
         code=$(curl -gsS -o /dev/null -w '%{http_code}' --max-time "{{ stack_validate_curl_connect_timeout }}" \
-          "http://{{ stack_validate_loopback }}:{{ x_ui_panel_host_port | string }}/")
+          "http://{{ stack_validate_loopback }}:{{ x_ui_panel_host_port | default('2053') | string }}/")
         case "$code" in 200|302|301|401) exit 0 ;; *) echo "unexpected HTTP $code" >&2; exit 1 ;; esac
       register: stack_validate_xui
       until: stack_validate_xui.rc == 0

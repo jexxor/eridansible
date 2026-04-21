@@ -3,6 +3,14 @@ matrix_maubot_enable: false
 matrix_maubot_root: /opt/matrix_maubot
 matrix_maubot_compose_filename: docker-compose.yml
 matrix_maubot_image: dock.mau.dev/maubot/maubot:latest
+# Must match the maubot image (Dockerfile ENV UID/GID); data dir must be writable for sqlite.
+matrix_maubot_uid: 1337
+matrix_maubot_gid: 1337
 
 matrix_maubot_public_url: "http://127.0.0.1:29316"
-matrix_maubot_admins: []
+# Maubot management UI logins: map username -> plaintext password (bcrypted on first start).
+matrix_maubot_admins: {}
+# High-entropy string for the crypto store (see maubot example-config).
+matrix_maubot_crypto_db_pickle_key: ""
+# Bind mount options after the path (e.g. "rw" or "rw,z" on SELinux).
+matrix_maubot_data_volume_flags: "rw"

@@ -5,7 +5,7 @@ services:
     environment:
       MAS_CONFIG: /data/config.yaml
     volumes:
-      - ./data:/data:ro
+      - ./data:/data
     networks:
       - datastores_net
       - matrix_base_net

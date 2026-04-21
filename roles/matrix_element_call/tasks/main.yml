@@ -24,6 +24,7 @@
         owner: root
         group: root
         mode: "0644"
+      tags: [config]
 
     - name: Render Element Call Compose file
       ansible.builtin.template:
@@ -32,6 +33,7 @@
         owner: root
         group: root
         mode: "0644"
+      tags: [config]
 
     - name: Bring Element Call up
       ansible.builtin.command:
@@ -42,3 +44,4 @@
         ('Creating' in (ec_up.stdout ~ ec_up.stderr))
         or ('Recreating' in (ec_up.stdout ~ ec_up.stderr))
         or ('Starting' in (ec_up.stdout ~ ec_up.stderr))
+      tags: [deploy]

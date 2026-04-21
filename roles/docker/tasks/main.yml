@@ -25,4 +25,3 @@
     - docker_users is defined
     - (item | string) | length > 0
     - item != 'root'
-

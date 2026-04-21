@@ -55,6 +55,9 @@ registration_requires_token: true
 
 report_stats: {{ matrix_base_report_stats | bool | ternary('true', 'false') }}
 
+# Explicit default avoids startup warning; Synapse will drop implicit matrix.org default in a future release.
+trusted_key_servers:
+  - server_name: "matrix.org"
 suppress_key_server_warning: true
 
 allow_public_rooms_without_auth: {{ matrix_base_allow_public_rooms_without_auth | bool | ternary('true', 'false') }}

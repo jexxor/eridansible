@@ -25,6 +25,7 @@
     group: root
     mode: "0644"
   when: caddy_enable | bool
+  tags: [config]
 
 - name: Render Caddyfile
   ansible.builtin.template:
@@ -34,14 +35,31 @@
     group: root
     mode: "0644"
   when: caddy_enable | bool
+  tags: [config]
+
+- name: Pull Caddy image(s)
+  ansible.builtin.command:
+    cmd: "docker-compose -f {{ caddy_compose_filename }} pull"
+    chdir: "{{ caddy_root }}"
+  register: caddy_compose_pull
+  until: caddy_compose_pull.rc == 0
+  retries: "{{ caddy_compose_pull_retries }}"
+  delay: "{{ caddy_compose_pull_delay }}"
+  when: caddy_enable | bool and (caddy_compose_pull_before_up | bool)
+  changed_when: false
+  tags: [deploy]
 
 - name: Bring Caddy up (docker-compose)
   ansible.builtin.command:
-    cmd: "docker-compose -f {{ caddy_root }}/{{ caddy_compose_filename }} up -d"
+    cmd: "docker-compose -f {{ caddy_compose_filename }} up -d"
     chdir: "{{ caddy_root }}"
   register: caddy_compose_up
+  until: caddy_compose_up.rc == 0
+  retries: "{{ caddy_compose_up_retries }}"
+  delay: "{{ caddy_compose_up_delay }}"
   changed_when: >-
     ('Creating' in (caddy_compose_up.stdout ~ caddy_compose_up.stderr))
     or ('Recreating' in (caddy_compose_up.stdout ~ caddy_compose_up.stderr))
     or ('Starting' in (caddy_compose_up.stdout ~ caddy_compose_up.stderr))
   when: caddy_enable | bool
+  tags: [deploy]

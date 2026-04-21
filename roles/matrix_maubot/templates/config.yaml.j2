@@ -1,11 +1,67 @@
+# Absolute path form; avoids mautrix sqlite:/// → sqlite: rewrite edge cases on some versions.
+database: sqlite:////data/maubot.db
+crypto_db_pickle_key: {{ matrix_maubot_crypto_db_pickle_key | to_json }}
+crypto_database: default
+database_opts:
+  min_size: 1
+  max_size: 10
+plugin_directories:
+  upload: /data/plugins
+  load:
+    - /data/plugins
+  trash: /data/trash
+plugin_databases:
+  sqlite: /data/dbs
+  postgres: null
+  postgres_max_conns_per_plugin: 3
+  postgres_opts: {}
 server:
-    hostname: 0.0.0.0
-    port: 29316
-    public_url: {{ matrix_maubot_public_url | to_json }}
-database: sqlite:///data/maubot.db
-logging:
-    level: INFO
+  hostname: 0.0.0.0
+  port: 29316
+  public_url: {{ matrix_maubot_public_url | to_json }}
+  ui_base_path: /_matrix/maubot
+  plugin_base_path: /_matrix/maubot/plugin/
+  override_resource_path: false
+  unshared_secret: generate
+homeservers: {}
 admins:
-{% for a in matrix_maubot_admins %}
-    - {{ a | to_json }}
+{% for user, password in matrix_maubot_admins.items() %}
+  {{ user | to_json }}: {{ password | to_json }}
 {% endfor %}
+api_features:
+  login: true
+  plugin: true
+  plugin_upload: true
+  instance: true
+  instance_database: true
+  client: true
+  client_proxy: true
+  client_auth: true
+  dev_open: false
+  log: true
+logging:
+  version: 1
+  disable_existing_loggers: false
+  formatters:
+    normal:
+      format: "[%(asctime)s] [%(levelname)s@%(name)s] %(message)s"
+  handlers:
+    file:
+      class: logging.handlers.RotatingFileHandler
+      formatter: normal
+      filename: /var/log/maubot.log
+      maxBytes: 10485760
+      backupCount: 5
+    console:
+      class: logging.StreamHandler
+      formatter: normal
+  loggers:
+    maubot:
+      level: INFO
+    mau:
+      level: INFO
+    aiohttp:
+      level: WARNING
+    root:
+      level: INFO
+      handlers: [file, console]

@@ -24,6 +24,10 @@ matrix_base_workers: []
 matrix_base_workers_federation_sender: false
 
 matrix_base_compose_pull_before_up: false
+matrix_base_compose_up_retries: 6
+matrix_base_compose_up_delay: 25
+matrix_base_compose_pull_retries: 6
+matrix_base_compose_pull_delay: 25
 
 matrix_base_registration_requires_token: false
 matrix_base_allow_public_rooms_without_auth: false

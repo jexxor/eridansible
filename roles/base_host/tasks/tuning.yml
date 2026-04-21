@@ -6,6 +6,7 @@
     owner: root
     group: root
     mode: "0644"
+  tags: [config]
 
 - name: Install sysctl tuning drop-in
   ansible.builtin.template:
@@ -15,6 +16,7 @@
     group: root
     mode: "0644"
   register: base_host_sysctl_dropin
+  tags: [config]
 
 - name: Apply sysctl tuning drop-in
   ansible.builtin.command:

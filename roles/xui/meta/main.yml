@@ -1,5 +1,8 @@
 ---
 galaxy_info:
+  author: jexxor
   role_name: x_ui
   description: 3x-ui (Xray panel) with host networking for REALITY / inbounds on host ports
+  license: MIT
+  min_ansible_version: "2.16"
 dependencies: []

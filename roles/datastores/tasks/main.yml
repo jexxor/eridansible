@@ -23,6 +23,7 @@
     owner: root
     group: root
     mode: "0600"
+  tags: [config]
 
 - name: Render Docker Compose for PostgreSQL + Redis
   ansible.builtin.template:
@@ -31,6 +32,7 @@
     owner: root
     group: root
     mode: "0644"
+  tags: [config]
 
 - name: Pull Compose images
   ansible.builtin.command:
@@ -38,6 +40,7 @@
     chdir: "{{ datastore_root }}"
   when: datastore_compose_pull_before_up | bool
   changed_when: false
+  tags: [deploy]
 
 - name: Bring datastores services up
   ansible.builtin.command:
@@ -48,3 +51,4 @@
     ('Creating' in (datastores_compose_up.stdout ~ datastores_compose_up.stderr))
     or ('Recreating' in (datastores_compose_up.stdout ~ datastores_compose_up.stderr))
     or ('Starting' in (datastores_compose_up.stdout ~ datastores_compose_up.stderr))
+  tags: [deploy]

@@ -1,24 +1,48 @@
 ---
+# Tag reference:
+#   base — OS bootstrap (packages, firewall, tuning)
+#   docker — Docker engine
+#   matrix — datastores, Synapse stack, coturn, maubot, post-deploy validation
+#   proxy — Caddy and 3x-ui edge stacks
+#   config — rendered config files (templates); combine with proxy/matrix and --skip-tags deploy
+#     to refresh configs without docker-compose up (e.g. ansible-playbook playbooks/bootstrap.yml --tags proxy,config --skip-tags deploy)
+#   deploy — docker-compose pull/up and similar runtime mutations
 - name: Bootstrap the host machine
   hosts: matrix
   become: true
   roles:
-    - base_host
-    - firewall
-    - docker
-    - datastores
-    - matrix_base
-    - matrix_mas
-    - matrix_livekit
-    - matrix_element_call
-    - matrix_coturn
-    - matrix_maubot
-    - caddy
-    - xui
+    - role: base_host
+      tags: [base]
+    - role: firewall
+      tags: [base]
+    - role: docker
+      tags: [docker]
+    - role: datastores
+      tags: [matrix]
+    - role: matrix_base
+      tags: [matrix]
+    - role: matrix_mas
+      tags: [matrix]
+    - role: matrix_livekit
+      tags: [matrix]
+    - role: matrix_element_call
+      tags: [matrix]
+    - role: matrix_coturn
+      tags: [matrix]
+    - role: matrix_maubot
+      tags: [matrix]
+    - role: caddy
+      tags: [proxy]
+    - role: xui
+      tags: [proxy]
 
 - name: Black-box validation of deployed stack
   hosts: matrix
   gather_facts: true
   become: false
+  # stack_validate uses bashisms (pipefail, arrays); Debian /bin/sh is dash and rejects them.
+  vars:
+    ansible_shell_executable: /bin/bash
   roles:
-    - stack_validate
+    - role: stack_validate
+      tags: [matrix]

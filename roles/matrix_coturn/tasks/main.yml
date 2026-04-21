@@ -24,6 +24,7 @@
         owner: root
         group: root
         mode: "0640"
+      tags: [config]
 
     - name: Render coturn Compose file
       ansible.builtin.template:
@@ -32,6 +33,7 @@
         owner: root
         group: root
         mode: "0644"
+      tags: [config]
 
     - name: Bring coturn up
       ansible.builtin.command:
@@ -42,6 +44,7 @@
         ('Creating' in (matrix_coturn_up.stdout ~ matrix_coturn_up.stderr))
         or ('Recreating' in (matrix_coturn_up.stdout ~ matrix_coturn_up.stderr))
         or ('Starting' in (matrix_coturn_up.stdout ~ matrix_coturn_up.stderr))
+      tags: [deploy]
 
     - name: Allow TURN TCP/UDP (coturn host ports)
       community.general.ufw:

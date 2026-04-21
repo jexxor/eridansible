@@ -1,8 +1,8 @@
 ---
 galaxy_info:
+  author: jexxor
   role_name: stack_validate
-  author: eridansible
   description: Black-box HTTP and port checks for the Matrix demo stack.
   license: MIT
-  min_ansible_version: "2.14"
+  min_ansible_version: "2.16"
 dependencies: []
