@@ -31,16 +31,8 @@ firewall_allow_udp:
   - port: 49152:65535
     comment: Coturn + LiveKit media UDP
 
-# Datastores role (roles/datastores) — PostgreSQL + Redis on localhost
 datastore_postgres_password: "password"
 
-# Caddy (roles/caddy): demo VM firewall reserves 80/443 for other services (e.g. Xray).
-# Publish Caddy on loopback alternate ports so compose does not collide.
-caddy_compose_ports:
-  - "127.0.0.1:8080:80"
-  - "127.0.0.1:8443:443"
-
-# Docker role
 docker_install: true
 docker_enable_service: true
 docker_install_compose: true
