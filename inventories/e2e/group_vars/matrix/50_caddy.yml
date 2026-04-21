@@ -1,0 +1,7 @@
+---
+caddy_compose_ports:
+  - "127.0.0.1:8080:80"
+  - "0.0.0.0:{{ stack_https_port }}:443"
+caddy_tls_mode: internal
+caddy_chat_hostname: "{{ stack_chat_hostname }}"
+caddy_apex_hostname: "{{ stack_apex_hostname }}"

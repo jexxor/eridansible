@@ -1,0 +1,22 @@
+---
+# Lab VM: nip.io resolves to the VM IP (no /etc/hosts). Keep e2e_vm_ip aligned with
+# ansible_host on vm-1 in inventory.yml, or pass -e e2e_vm_ip=...
+
+e2e_vm_ip: "192.168.10.100"
+
+stack_matrix_hostname: "matrix.{{ e2e_vm_ip }}.nip.io"
+stack_chat_hostname: "chat.{{ e2e_vm_ip }}.nip.io"
+stack_apex_hostname: "{{ e2e_vm_ip }}.nip.io"
+stack_https_port: 8443
+stack_turn_port: 3478
+
+# Public origins shared by Synapse, LiveKit JWT, Element Call (avoid duplicating in matrix group_vars).
+stack_matrix_public_baseurl: "https://{{ stack_matrix_hostname }}:{{ stack_https_port }}"
+stack_element_call_baseurl: "https://{{ stack_chat_hostname }}:{{ stack_https_port }}/call"
+stack_matrix_livekit_jwt_url: "{{ stack_matrix_public_baseurl }}/livekit/jwt"
+
+# Extra headroom for cold images / slow disks on lab VMs
+stack_validate_retries: 42
+stack_validate_delay: 5
+matrix_base_validate_retries: 48
+matrix_base_validate_delay: 5

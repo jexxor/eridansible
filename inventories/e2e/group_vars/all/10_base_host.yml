@@ -1,0 +1,4 @@
+---
+base_host_swapfile_size_mb: "{{ ansible_facts['memtotal_mb'] }}"
+base_host_swapfile_path: "/swapfile"
+base_host_ssh_port: 22

@@ -1,0 +1,14 @@
+---
+matrix_base_enable: true
+matrix_base_server_name: "{{ stack_matrix_hostname }}"
+matrix_base_public_baseurl: "{{ stack_matrix_public_baseurl }}"
+matrix_base_registration_shared_secret: "{{ vault_matrix_base_registration_shared_secret }}"
+matrix_base_worker_replication_secret: "{{ vault_matrix_base_worker_replication_secret }}"
+matrix_base_workers_federation_sender: true
+
+matrix_base_turn_uris:
+  - "turn:{{ stack_matrix_hostname }}:{{ stack_turn_port }}?transport=udp"
+  - "turn:{{ stack_matrix_hostname }}:{{ stack_turn_port }}?transport=tcp"
+matrix_coturn_static_auth_secret: "{{ vault_matrix_coturn_static_auth_secret }}"
+matrix_base_turn_shared_secret: "{{ matrix_coturn_static_auth_secret }}"
+matrix_base_turn_allow_guests: true

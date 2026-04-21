@@ -1,4 +1,7 @@
 ---
+# Lab / E2E: single VM; nip.io in group_vars so DNS matches the VM without /etc/hosts.
+# Override ansible_host / e2e_vm_ip together if your VM address differs.
+
 all:
   children:
     matrix:

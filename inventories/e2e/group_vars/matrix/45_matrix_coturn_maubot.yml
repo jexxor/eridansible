@@ -1,0 +1,7 @@
+---
+matrix_coturn_enable: true
+
+matrix_maubot_enable: true
+matrix_maubot_crypto_db_pickle_key: "{{ vault_matrix_maubot_crypto_db_pickle_key }}"
+matrix_maubot_admins:
+  admin: "{{ vault_matrix_maubot_admin_password }}"

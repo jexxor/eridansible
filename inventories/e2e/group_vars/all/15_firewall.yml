@@ -1,0 +1,8 @@
+---
+firewall_enable: true
+# SSH is opened by role firewall "Allow SSH (configured port)"; do not duplicate port 22 here
+# or UFW may report spurious changes on every run.
+firewall_allow_tcp:
+  - { port: 443, comment: Xray }
+  - { port: "{{ stack_https_port | int }}", comment: Caddy HTTPS }
+firewall_allow_udp: []

@@ -1,0 +1,17 @@
+---
+matrix_mas_enable: true
+matrix_mas_encryption_secret: "{{ vault_matrix_mas_encryption_secret }}"
+matrix_mas_rsa_private_key_pem: "{{ vault_matrix_mas_rsa_private_key_pem }}"
+matrix_mas_matrix_secret: "{{ vault_matrix_mas_matrix_secret }}"
+matrix_mas_admin_token: "{{ vault_matrix_mas_admin_token }}"
+matrix_mas_synapse_client_secret: "{{ vault_matrix_mas_synapse_client_secret }}"
+matrix_mas_compat_client_secret: "{{ vault_matrix_mas_compat_client_secret }}"
+matrix_mas_policy_admin_users:
+  - "@admin:{{ stack_matrix_hostname }}"
+
+matrix_base_mas_oidc_enabled: true
+matrix_base_mas_issuer: "https://{{ stack_matrix_hostname }}:{{ stack_https_port }}/auth"
+matrix_base_mas_introspection_url: "http://mas:8080/oauth2/introspect"
+matrix_base_mas_synapse_client_id: "00000000000000000000000001"
+matrix_base_mas_synapse_client_secret: "{{ matrix_mas_synapse_client_secret }}"
+matrix_base_mas_admin_token: "{{ matrix_mas_admin_token }}"

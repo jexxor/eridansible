@@ -1,0 +1,11 @@
+---
+matrix_livekit_enable: true
+matrix_livekit_api_secret: "{{ vault_matrix_livekit_api_secret }}"
+
+matrix_element_call_enable: true
+matrix_base_element_call_livekit_url: "{{ stack_matrix_livekit_jwt_url }}"
+matrix_base_matrix_rtc_livekit_url: "{{ stack_matrix_livekit_jwt_url }}"
+matrix_base_element_element_call_url: "{{ stack_element_call_baseurl }}"
+matrix_base_element_feature_group_calls: true
+matrix_base_element_feature_video_rooms: true
+matrix_base_element_feature_element_call_video_rooms: true

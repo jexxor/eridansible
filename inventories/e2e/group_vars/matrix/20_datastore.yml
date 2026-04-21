@@ -1,0 +1,2 @@
+---
+datastore_postgres_password: "{{ vault_datastore_postgres_password }}"

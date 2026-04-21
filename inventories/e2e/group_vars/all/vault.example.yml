@@ -4,6 +4,8 @@ vault_matrix_base_registration_shared_secret: "change-me-16chars-minimum"
 vault_matrix_base_worker_replication_secret: "change-me-16chars-minimum"
 vault_matrix_coturn_static_auth_secret: "demo-coturn-static-secret-min16"
 vault_matrix_mas_encryption_secret: "01234567890123456789012345678901"
+vault_matrix_maubot_admin_password: "change-me-maubot-ui-password"
+vault_matrix_maubot_crypto_db_pickle_key: "01234567890123456789012345678901"
 vault_matrix_mas_rsa_private_key_pem: |
   -----BEGIN PRIVATE KEY-----
   AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
