@@ -3,4 +3,9 @@ x_ui_root: /opt/x-ui
 x_ui_compose_filename: docker-compose.yml
 x_ui_image: ghcr.io/mhsanaei/3x-ui:latest
 
+x_ui_network_mode: bridge
+
+x_ui_panel_host_port: "2053"
+x_ui_panel_container_port: "2053"
+
 x_ui_compose_pull_before_up: false

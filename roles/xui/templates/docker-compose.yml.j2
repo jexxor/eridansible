@@ -3,6 +3,11 @@ services:
     image: {{ x_ui_image }}
     restart: unless-stopped
     tty: true
+{% if (x_ui_network_mode | default('bridge')) == 'host' %}
     network_mode: host
+{% else %}
+    ports:
+      - "127.0.0.1:{{ x_ui_panel_host_port }}:{{ x_ui_panel_container_port }}"
+{% endif %}
     volumes:
       - ./db:/etc/x-ui
