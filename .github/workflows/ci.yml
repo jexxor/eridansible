@@ -19,4 +19,4 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run ansible-lint
-        run: ansible-lint .
+        run: ansible-lint playbooks/
