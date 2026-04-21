@@ -9,14 +9,24 @@ on:
       - main
 
 jobs:
-  build:
+  ansible-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v4
-      - name: Install dependencies
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
+
+      - name: Install Ansible collections into the workspace
+        run: ansible-galaxy collection install -r collections/requirements.yml -p .ansible/collections
+
       - name: Run ansible-lint
-        run: ansible-lint playbooks/
+        env:
+          ANSIBLE_COLLECTIONS_PATH: "${{ github.workspace }}/.ansible/collections:/usr/share/ansible/collections"
+        run: ansible-lint --force-color -c "${{ github.workspace }}/.ansible-lint" "${{ github.workspace }}"
