@@ -1,41 +1,86 @@
+---
+# Non-secret layout for the demo inventory. Secrets live in vault.yml (ansible-vault).
+
+# Hostnames and ports (override per environment)
+demo_matrix_hostname: matrix.nekochat.org
+demo_chat_hostname: chat.nekochat.org
+demo_apex_hostname: nekochat.org
+demo_https_port: 8443
+demo_turn_port: 3478
+
 base_host_swapfile_size_mb: "{{ ansible_facts['memtotal_mb'] }}"
 base_host_swapfile_path: "/swapfile"
+base_host_ssh_port: 22
 
-base_host_ssh_port: 2222
-
-# Firewall role
 firewall_enable: true
 firewall_allow_tcp:
-  - port: 61616
-    comment: SSH
-  - port: 8448
-    comment: Matrix federation
-  - port: 80
-    comment: HTTP
-  - port: 3478
-    comment: TURN TCP
-  - port: 5349
-    comment: TURNS TCP
-  - port: 7881
-    comment: LiveKit WebSocket fallback
-  - port: 443
-    comment: Xray inbound
+  - { port: 22, comment: SSH }
+  - { port: 443, comment: Xray }
+  - { port: "{{ demo_https_port | int }}", comment: Caddy HTTPS }
+firewall_allow_udp: []
 
-firewall_allow_udp:
-  - port: 50100:50200
-    comment: LiveKit WebRTC media
-  - port: 3478
-    comment: TURN UDP
-  - port: 5349
-    comment: TURNS UDP
-  - port: 49152:65535
-    comment: Coturn + LiveKit media UDP
+datastore_postgres_password: "{{ vault_datastore_postgres_password }}"
 
-datastore_postgres_password: "password"
+matrix_base_enable: true
+matrix_base_server_name: "{{ demo_matrix_hostname }}"
+matrix_base_public_baseurl: "https://{{ demo_matrix_hostname }}:{{ demo_https_port }}"
+matrix_base_registration_shared_secret: "{{ vault_matrix_base_registration_shared_secret }}"
+matrix_base_worker_replication_secret: "{{ vault_matrix_base_worker_replication_secret }}"
+matrix_base_workers_federation_sender: true
+
+matrix_base_turn_uris:
+  - "turn:{{ demo_matrix_hostname }}:{{ demo_turn_port }}?transport=udp"
+  - "turn:{{ demo_matrix_hostname }}:{{ demo_turn_port }}?transport=tcp"
+matrix_coturn_static_auth_secret: "{{ vault_matrix_coturn_static_auth_secret }}"
+matrix_base_turn_shared_secret: "{{ matrix_coturn_static_auth_secret }}"
+matrix_base_turn_allow_guests: true
+
+matrix_mas_enable: true
+matrix_mas_encryption_secret: "{{ vault_matrix_mas_encryption_secret }}"
+matrix_mas_rsa_private_key_pem: "{{ vault_matrix_mas_rsa_private_key_pem }}"
+matrix_mas_matrix_secret: "{{ vault_matrix_mas_matrix_secret }}"
+matrix_mas_admin_token: "{{ vault_matrix_mas_admin_token }}"
+matrix_mas_synapse_client_secret: "{{ vault_matrix_mas_synapse_client_secret }}"
+matrix_mas_compat_client_secret: "{{ vault_matrix_mas_compat_client_secret }}"
+matrix_mas_policy_admin_users:
+  - "@admin:{{ demo_matrix_hostname }}"
+
+matrix_base_mas_oidc_enabled: true
+matrix_base_mas_issuer: "https://{{ demo_matrix_hostname }}:{{ demo_https_port }}/auth"
+matrix_base_mas_introspection_url: "http://mas:8080/oauth2/introspect"
+matrix_base_mas_synapse_client_id: "00000000000000000000000001"
+matrix_base_mas_synapse_client_secret: "{{ matrix_mas_synapse_client_secret }}"
+matrix_base_mas_admin_token: "{{ matrix_mas_admin_token }}"
+
+matrix_livekit_enable: true
+matrix_livekit_api_secret: "{{ vault_matrix_livekit_api_secret }}"
+
+matrix_element_call_enable: true
+matrix_base_element_call_livekit_url: "https://{{ demo_matrix_hostname }}:{{ demo_https_port }}/livekit/jwt"
+matrix_base_matrix_rtc_livekit_url: "{{ matrix_base_element_call_livekit_url }}"
+matrix_base_element_element_call_url: "https://{{ demo_chat_hostname }}:{{ demo_https_port }}/call"
+matrix_base_element_feature_group_calls: true
+matrix_base_element_feature_video_rooms: true
+matrix_base_element_feature_element_call_video_rooms: true
+
+matrix_coturn_enable: true
+
+matrix_maubot_enable: true
+matrix_maubot_admins:
+  - "@admin:{{ demo_matrix_hostname }}"
+
+caddy_compose_ports:
+  - "127.0.0.1:8080:80"
+  - "0.0.0.0:{{ demo_https_port }}:443"
+caddy_tls_mode: internal
+caddy_chat_hostname: "{{ demo_chat_hostname }}"
+caddy_apex_hostname: "{{ demo_apex_hostname }}"
 
 docker_install: true
 docker_enable_service: true
 docker_install_compose: true
 docker_users:
   - "{{ ansible_user_id }}"
-  
+  - vagrant
+
+stack_validate_enable: true
