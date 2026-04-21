@@ -5,3 +5,5 @@
     - role: base_host
     - role: firewall
     - role: docker
+    - role: datastores
+    - role: caddy
