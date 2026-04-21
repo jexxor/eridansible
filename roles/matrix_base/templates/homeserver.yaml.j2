@@ -1,0 +1,147 @@
+server_name: "{{ matrix_base_server_name }}"
+public_baseurl: "{{ matrix_base_public_baseurl }}"
+
+pid_file: /data/homeserver.pid
+
+listeners:
+  - port: 8008
+    tls: false
+    bind_addresses: ['0.0.0.0']
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+{% if matrix_base_workers_federation_sender | bool %}
+  - port: 9093
+    tls: false
+    bind_addresses: ['0.0.0.0']
+    type: http
+    resources:
+      - names: [replication]
+        compress: false
+{% endif %}
+
+database:
+  name: psycopg2
+  args:
+    user: "{{ datastore_postgres_user }}"
+    password: "{{ datastore_postgres_password }}"
+    database: synapse
+    host: postgres
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+redis:
+  enabled: true
+  host: redis
+  port: 6379
+
+media_store_path: /data/media_store
+
+{% if matrix_base_media_retention_remote_lifetime | length > 0 %}
+media_retention_rules:
+  remote_media_lifetime: {{ matrix_base_media_retention_remote_lifetime }}
+{% endif %}
+
+signing_key_path: "/data/{{ matrix_base_server_name }}.signing.key"
+
+enable_registration: false
+registration_shared_secret: "{{ matrix_base_registration_shared_secret }}"
+{% if matrix_base_registration_requires_token | bool %}
+registration_requires_token: true
+{% endif %}
+
+report_stats: {% if matrix_base_report_stats | bool %}true{% else %}false{% endif %}
+
+suppress_key_server_warning: true
+
+allow_public_rooms_without_auth: {% if matrix_base_allow_public_rooms_without_auth | bool %}true{% else %}false{% endif %}
+allow_public_rooms_over_federation: {% if matrix_base_allow_public_rooms_over_federation | bool %}true{% else %}false{% endif %}
+
+{% if matrix_base_federation_domain_whitelist | length > 0 %}
+federation_domain_whitelist:
+{% for d in matrix_base_federation_domain_whitelist %}
+  - "{{ d }}"
+{% endfor %}
+{% endif %}
+
+{% if matrix_base_turn_uris | length > 0 %}
+turn_uris:
+{% for u in matrix_base_turn_uris %}
+  - "{{ u }}"
+{% endfor %}
+turn_shared_secret: "{{ matrix_base_turn_shared_secret }}"
+turn_allow_guests: {% if matrix_base_turn_allow_guests | bool %}true{% else %}false{% endif %}
+{% endif %}
+
+{% if matrix_base_auto_join_rooms | length > 0 %}
+auto_join_rooms:
+{% for r in matrix_base_auto_join_rooms %}
+  - "{{ r }}"
+{% endfor %}
+{% endif %}
+
+user_directory:
+  enabled: {% if matrix_base_user_directory_enabled | bool %}true{% else %}false{% endif %}
+  search_all_users: {% if matrix_base_user_directory_search_all_users | bool %}true{% else %}false{% endif %}
+  prefer_local_users: {% if matrix_base_user_directory_prefer_local_users | bool %}true{% else %}false{% endif %}
+
+{% if matrix_base_matrix_rtc_livekit_url | length > 0 %}
+matrix_rtc:
+  transports:
+    - type: livekit
+      livekit_service_url: "{{ matrix_base_matrix_rtc_livekit_url }}"
+{% endif %}
+
+{% if matrix_base_mas_oidc_enabled | bool
+      or matrix_base_experimental_msc3882_enabled | bool
+      or matrix_base_experimental_msc4108_enabled | bool
+      or matrix_base_experimental_msc4143_enabled | bool
+      or matrix_base_experimental_msc3266_enabled | bool
+      or matrix_base_experimental_msc4222_enabled | bool
+      or (matrix_base_experimental_max_event_delay_duration | length > 0) %}
+experimental_features:
+{% if matrix_base_mas_oidc_enabled | bool %}
+  msc3861:
+    enabled: true
+    issuer: "{{ matrix_base_mas_issuer }}"
+    introspection_endpoint: "{{ matrix_base_mas_introspection_url }}"
+    client_id: "{{ matrix_base_mas_synapse_client_id }}"
+    client_secret: "{{ matrix_base_mas_synapse_client_secret }}"
+    client_auth_method: "client_secret_post"
+    admin_token: "{{ matrix_base_mas_admin_token }}"
+{% endif %}
+{% if matrix_base_experimental_msc3882_enabled | bool %}
+  msc3882_enabled: true
+{% endif %}
+{% if matrix_base_experimental_msc4108_enabled | bool %}
+  msc4108_enabled: true
+{% endif %}
+{% if matrix_base_experimental_msc4143_enabled | bool %}
+  msc4143_enabled: true
+{% endif %}
+{% if matrix_base_experimental_msc3266_enabled | bool %}
+  msc3266_enabled: true
+{% endif %}
+{% if matrix_base_experimental_msc4222_enabled | bool %}
+  msc4222_enabled: true
+{% endif %}
+{% if matrix_base_experimental_max_event_delay_duration | length > 0 %}
+  max_event_delay_duration: "{{ matrix_base_experimental_max_event_delay_duration }}"
+{% endif %}
+{% endif %}
+
+{% if matrix_base_workers_federation_sender | bool %}
+send_federation: false
+federation_sender_instances:
+  - federation_sender1
+
+worker_replication_secret: "{{ matrix_base_worker_replication_secret }}"
+
+instance_map:
+  main:
+    host: synapse
+    port: 9093
+{% endif %}

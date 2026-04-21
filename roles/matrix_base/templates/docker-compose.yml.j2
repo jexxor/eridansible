@@ -1,0 +1,62 @@
+services:
+  synapse:
+    image: {{ matrix_base_synapse_image }}
+    restart: unless-stopped
+    environment:
+      SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
+    volumes:
+      - ./data:/data
+    networks:
+      - matrix_app
+      - datastores_net
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python3 -c "import urllib.request as u; u.urlopen('http://127.0.0.1:8008/_matrix/client/versions', timeout=5).read()"
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 90s
+
+  element-web:
+    image: {{ matrix_base_element_image }}
+    restart: unless-stopped
+    volumes:
+      - ./element/config.json:/app/config.json:ro
+    networks:
+      - matrix_app
+    depends_on:
+      synapse:
+        condition: service_started
+
+{% if matrix_base_workers_federation_sender | bool %}
+  synapse-federation-sender:
+    image: {{ matrix_base_synapse_image }}
+    restart: unless-stopped
+    user: "991:991"
+    command:
+      - /start.py
+      - run
+      - -m
+      - synapse.app.generic_worker
+      - --config-path=/data/homeserver.yaml
+      - --config-path=/data/workers/federation_sender1.yaml
+    volumes:
+      - ./data:/data
+    networks:
+      - matrix_app
+      - datastores_net
+    depends_on:
+      synapse:
+        condition: service_started
+{% endif %}
+
+networks:
+  # Fixed Docker network name so roles/caddy can attach as external: matrix_base_default
+  matrix_app:
+    name: matrix_base_default
+    driver: bridge
+  datastores_net:
+    external: true
+    name: datastores_default

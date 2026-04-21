@@ -1,0 +1,154 @@
+---
+- name: Matrix base stack (Synapse + Element + optional workers)
+  block:
+    - name: Require secrets when Matrix base is enabled
+      ansible.builtin.assert:
+        that:
+          - matrix_base_registration_shared_secret | length >= 16
+          - datastore_postgres_password is defined
+          - (datastore_postgres_password | string) | length > 0
+        fail_msg: >-
+          Set matrix_base_registration_shared_secret (16+ chars) and datastore_postgres_password
+          (same DB as roles/datastores) when matrix_base_enable is true.
+
+    - name: Require worker replication secret when federation sender worker is enabled
+      ansible.builtin.assert:
+        that:
+          - matrix_base_worker_replication_secret | length >= 16
+        fail_msg: >-
+          Set matrix_base_worker_replication_secret (16+ chars) when
+          matrix_base_workers_federation_sender is true.
+      when: matrix_base_workers_federation_sender | bool
+
+    - name: Require TURN shared secret when turn_uris is set
+      ansible.builtin.assert:
+        that:
+          - matrix_base_turn_shared_secret | length > 0
+        fail_msg: >-
+          Set matrix_base_turn_shared_secret when matrix_base_turn_uris is non-empty.
+      when: matrix_base_turn_uris | length > 0
+
+    - name: Require MAS OIDC settings when native OIDC is enabled
+      ansible.builtin.assert:
+        that:
+          - matrix_base_mas_issuer | length > 0
+          - matrix_base_mas_introspection_url | length > 0
+          - matrix_base_mas_synapse_client_id | length > 0
+          - matrix_base_mas_synapse_client_secret | length > 0
+          - matrix_base_mas_admin_token | length > 0
+        fail_msg: >-
+          Set matrix_base_mas_issuer, matrix_base_mas_introspection_url, client id/secret,
+          and matrix_base_mas_admin_token when matrix_base_mas_oidc_enabled is true.
+      when: matrix_base_mas_oidc_enabled | bool
+
+    - name: Ensure Matrix base directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - "{{ matrix_base_root }}"
+        - "{{ matrix_base_root }}/data"
+        - "{{ matrix_base_root }}/element"
+        - "{{ matrix_base_root }}/data/workers"
+
+    - name: Wait for datastores Postgres to accept connections
+      ansible.builtin.shell: |
+        set -e
+        cd "{{ datastore_root }}"
+        docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
+          pg_isready -U "{{ datastore_postgres_user }}" -d postgres
+      register: matrix_pg_ready
+      until: matrix_pg_ready.rc == 0
+      retries: 36
+      delay: 5
+      changed_when: false
+
+    - name: Ensure Synapse Postgres database exists
+      ansible.builtin.shell: |
+        set -e
+        cd "{{ datastore_root }}"
+        if docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
+          psql -U "{{ datastore_postgres_user }}" -d postgres -tAc \
+          "SELECT 1 FROM pg_database WHERE datname='synapse'" | grep -q 1; then
+          exit 0
+        fi
+        docker-compose -f "{{ datastore_compose_filename }}" exec -T postgres \
+          psql -U "{{ datastore_postgres_user }}" -d postgres -v ON_ERROR_STOP=1 \
+          -c "CREATE DATABASE synapse OWNER {{ datastore_postgres_user }};"
+      register: matrix_db_create
+      changed_when: "'CREATE DATABASE' in (matrix_db_create.stdout | default(''))"
+
+    - name: Bootstrap Synapse /data (generate signing key and base config once)
+      ansible.builtin.command:
+        cmd: >-
+          docker run --rm
+          -e SYNAPSE_SERVER_NAME={{ matrix_base_server_name }}
+          -e SYNAPSE_REPORT_STATS={% if matrix_base_report_stats | bool %}yes{% else %}no{% endif %}
+          -v {{ matrix_base_root }}/data:/data
+          {{ matrix_base_synapse_image }}
+          generate
+      args:
+        creates: "{{ matrix_base_root }}/data/homeserver.yaml"
+
+    - name: Render homeserver.yaml
+      ansible.builtin.template:
+        src: homeserver.yaml.j2
+        dest: "{{ matrix_base_root }}/data/homeserver.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Render federation sender worker config
+      ansible.builtin.template:
+        src: workers/federation_sender1.yaml.j2
+        dest: "{{ matrix_base_root }}/data/workers/federation_sender1.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+      when: matrix_base_workers_federation_sender | bool
+
+    - name: Render Element Web config
+      ansible.builtin.template:
+        src: element/config.json.j2
+        dest: "{{ matrix_base_root }}/element/config.json"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Render Element Call config (for mounting into Element Call container)
+      ansible.builtin.template:
+        src: element/element-call-config.json.j2
+        dest: "{{ matrix_base_root }}/element/element-call-config.json"
+        owner: root
+        group: root
+        mode: "0644"
+      when: matrix_base_element_call_livekit_url | length > 0
+
+    - name: Render Matrix base Compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ matrix_base_root }}/{{ matrix_base_compose_filename }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Pull Matrix base images
+      ansible.builtin.command:
+        cmd: "docker-compose -f {{ matrix_base_compose_filename }} pull"
+        chdir: "{{ matrix_base_root }}"
+      when: matrix_base_compose_pull_before_up | bool
+      changed_when: false
+
+    - name: Bring Matrix base stack up
+      ansible.builtin.command:
+        cmd: "docker-compose -f {{ matrix_base_compose_filename }} up -d"
+        chdir: "{{ matrix_base_root }}"
+      register: matrix_base_compose_up
+      changed_when: >-
+        ('Creating' in (matrix_base_compose_up.stdout ~ matrix_base_compose_up.stderr))
+        or ('Recreating' in (matrix_base_compose_up.stdout ~ matrix_base_compose_up.stderr))
+        or ('Starting' in (matrix_base_compose_up.stdout ~ matrix_base_compose_up.stderr))
+  when: matrix_base_enable | bool

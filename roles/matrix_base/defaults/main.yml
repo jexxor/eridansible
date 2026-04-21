@@ -1,0 +1,85 @@
+---
+matrix_base_enable: false
+
+matrix_base_root: /opt/matrix_base
+matrix_base_compose_filename: docker-compose.yml
+matrix_base_synapse_image: docker.io/matrixdotorg/synapse:latest
+matrix_base_element_image: docker.io/vectorim/element-web:latest
+
+matrix_base_server_name: synapse.example.org
+matrix_base_public_baseurl: "https://{{ matrix_base_server_name }}"
+matrix_base_report_stats: false
+
+# Must match datastores role (same Postgres instance).
+datastore_root: /opt/datastores
+datastore_compose_filename: docker-compose.yml
+datastore_postgres_user: app
+
+# Secrets (use Vault in production).
+matrix_base_registration_shared_secret: ""
+matrix_base_worker_replication_secret: ""
+
+# Offload outbound federation to a dedicated worker (recommended for higher throughput).
+matrix_base_workers_federation_sender: false
+
+matrix_base_compose_pull_before_up: false
+
+# --- Optional Synapse parity (see target_configs/README.md + target.log) ---
+
+matrix_base_registration_requires_token: false
+matrix_base_allow_public_rooms_without_auth: false
+matrix_base_allow_public_rooms_over_federation: false
+
+# TURN (coturn). Set turn_uris (list) and turn_shared_secret together.
+matrix_base_turn_uris: []
+matrix_base_turn_shared_secret: ""
+matrix_base_turn_allow_guests: false
+
+matrix_base_user_directory_enabled: true
+matrix_base_user_directory_search_all_users: true
+matrix_base_user_directory_prefer_local_users: true
+
+matrix_base_auto_join_rooms: []
+
+# Non-empty list restricts outbound federation to these domains (omit when empty).
+matrix_base_federation_domain_whitelist: []
+
+# e.g. "90d" for remote media TTL; empty = omit block
+matrix_base_media_retention_remote_lifetime: ""
+
+# Matrix RTC → LiveKit JWT service (HTTPS URL clients use); empty = omit matrix_rtc
+matrix_base_matrix_rtc_livekit_url: ""
+
+# Native OIDC (MAS). Requires MAS reachable at introspection URL (e.g. same Docker network).
+matrix_base_mas_oidc_enabled: false
+matrix_base_mas_issuer: ""
+matrix_base_mas_introspection_url: ""
+matrix_base_mas_synapse_client_id: ""
+matrix_base_mas_synapse_client_secret: ""
+matrix_base_mas_admin_token: ""
+
+# Optional extra MSC toggles (Synapse versions vary). All default false.
+matrix_base_experimental_msc3882_enabled: false
+matrix_base_experimental_msc4108_enabled: false
+matrix_base_experimental_msc4143_enabled: false
+matrix_base_experimental_msc3266_enabled: false
+matrix_base_experimental_msc4222_enabled: false
+matrix_base_experimental_max_event_delay_duration: ""
+
+# --- Element Web (optional UX parity with target.log) ---
+
+matrix_base_element_brand: ""
+matrix_base_element_disable_custom_urls: false
+matrix_base_element_disable_guests: false
+matrix_base_element_show_labs_settings: false
+matrix_base_element_registration_setting_hidden: false
+
+# Element Call widget URL (separate Element Call deployment); empty = omit
+matrix_base_element_element_call_url: ""
+
+matrix_base_element_feature_group_calls: false
+matrix_base_element_feature_video_rooms: false
+matrix_base_element_feature_element_call_video_rooms: false
+
+# Written beside config.json for mounting into Element Call later (optional).
+matrix_base_element_call_livekit_url: ""

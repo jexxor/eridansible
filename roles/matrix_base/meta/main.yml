@@ -1,0 +1,5 @@
+---
+galaxy_info:
+  role_name: matrix_base
+  description: Minimal Matrix (Synapse + Element); optional federation-sender worker
+dependencies: []

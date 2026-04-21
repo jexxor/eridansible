@@ -1,0 +1,18 @@
+{
+  "default_server_config": {
+    "m.homeserver": {
+      "base_url": "{{ matrix_base_public_baseurl }}",
+      "server_name": "{{ matrix_base_server_name }}"
+    }
+  },
+  "livekit": {
+    "livekit_service_url": "{{ matrix_base_element_call_livekit_url }}"
+  },
+  "auth": {
+    "method": "none"
+  },
+  "features": {
+    "feature_group_calls": {{ matrix_base_element_feature_group_calls | to_json }},
+    "feature_video_rooms": {{ matrix_base_element_feature_video_rooms | to_json }}
+  }
+}

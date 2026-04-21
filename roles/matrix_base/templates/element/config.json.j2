@@ -1,0 +1,31 @@
+{
+  "default_server_config": {
+    "m.homeserver": {
+      "base_url": "{{ matrix_base_public_baseurl }}",
+      "server_name": "{{ matrix_base_server_name }}"
+    }
+  },
+  "default_server_name": "{{ matrix_base_server_name }}",
+  "disable_custom_urls": {{ matrix_base_element_disable_custom_urls | to_json }},
+  "disable_guests": {{ matrix_base_element_disable_guests | to_json }},
+  "show_labs_settings": {{ matrix_base_element_show_labs_settings | to_json }},
+{% if matrix_base_element_brand | length > 0 %}
+  "brand": {{ matrix_base_element_brand | to_json }},
+{% endif %}
+{% if matrix_base_element_registration_setting_hidden | bool %}
+  "setting_defaults": {
+    "UIFeature.registration": false
+  },
+{% endif %}
+{% if matrix_base_element_element_call_url | length > 0 %}
+  "element_call": {
+    "url": {{ matrix_base_element_element_call_url | to_json }},
+    "use_ex_widget": true
+  },
+{% endif %}
+  "features": {
+    "feature_group_calls": {{ matrix_base_element_feature_group_calls | to_json }},
+    "feature_video_rooms": {{ matrix_base_element_feature_video_rooms | to_json }},
+    "feature_element_call_video_rooms": {{ matrix_base_element_feature_element_call_video_rooms | to_json }}
+  }
+}
