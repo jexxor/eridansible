@@ -1,0 +1,9 @@
+- name: Bootstrap the host machine
+  hosts: matrix
+  become: true
+  roles:
+    - role: base
+    - role: tuning
+    - role: firewall
+    - role: docker
+    

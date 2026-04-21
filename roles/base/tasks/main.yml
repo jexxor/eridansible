@@ -1,0 +1,26 @@
+---
+- name: Update and upgrade the package list
+  apt:
+    update_cache: true
+    upgrade: dist
+
+- name: Install basic packages
+  apt:
+    name:
+      - vim
+      - sudo
+      - ufw
+      - openssh-server
+      - ca-certificates
+      - curl
+      - wget
+      - rsync
+      - net-tools
+      - tcpdump 
+    state: present
+
+- name: Enable and start the ssh service
+  systemd:
+    name: ssh
+    state: started
+    enabled: true
