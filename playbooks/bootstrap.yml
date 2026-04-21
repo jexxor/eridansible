@@ -40,7 +40,6 @@
   hosts: matrix
   gather_facts: true
   become: false
-  # stack_validate uses bashisms (pipefail, arrays); Debian /bin/sh is dash and rejects them.
   vars:
     ansible_shell_executable: /bin/bash
   roles:

@@ -3,7 +3,6 @@ caddy_enable: true
 caddy_root: /opt/caddy
 
 caddy_compose_filename: docker-compose.yml
-# docker-compose up pulls missing images; registry TLS can be flaky.
 caddy_compose_pull_before_up: false
 caddy_compose_up_retries: 6
 caddy_compose_up_delay: 25
