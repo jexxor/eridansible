@@ -1,2 +1,32 @@
+---
 base_host_swapfile_size_mb: "{{ ansible_memtotal_mb }}"
 base_host_swapfile_path: "/swapfile"
+
+# Install /etc/security/limits.d and /etc/sysctl.d tuning (high connection / media workloads).
+base_host_sys_tuning_enable: true
+
+# PAM limits (applies to new login sessions after deploy).
+base_host_limits_nofile: "1048576"
+
+# Sysctl defaults; inventory may set base_host_sysctl_extra to merge overrides per key.
+base_host_sysctl_extra: {}
+
+base_host_sysctl_settings:
+  fs.file-max: "2097152"
+  net.core.rmem_max: "16777216"
+  net.core.wmem_max: "16777216"
+  net.core.rmem_default: "2097152"
+  net.core.wmem_default: "2097152"
+  net.core.optmem_max: "65536"
+  net.core.netdev_max_backlog: "10000"
+  net.core.default_qdisc: "fq"
+  net.ipv4.tcp_congestion_control: "bbr"
+  net.ipv4.tcp_rmem: "4096 87380 16777216"
+  net.ipv4.tcp_wmem: "4096 65536 16777216"
+  net.ipv4.tcp_max_syn_backlog: "8192"
+  net.ipv4.tcp_slow_start_after_idle: "0"
+  net.ipv4.tcp_tw_reuse: "1"
+  net.ipv4.udp_rmem_min: "16384"
+  net.ipv4.udp_wmem_min: "16384"
+  vm.swappiness: "10"
+  vm.vfs_cache_pressure: "50"

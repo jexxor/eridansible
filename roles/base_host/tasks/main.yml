@@ -16,8 +16,13 @@
       - wget
       - rsync
       - net-tools
-      - tcpdump 
+      - tcpdump
+      - procps
     state: present
+
+- name: System limits and sysctl tuning
+  ansible.builtin.import_tasks: tuning.yml
+  when: base_host_sys_tuning_enable | bool
 
 - name: Set hostname
   ansible.builtin.hostname:

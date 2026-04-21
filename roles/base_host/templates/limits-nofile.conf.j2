@@ -1,0 +1,5 @@
+# Managed by Ansible (roles/base_host). Applies to new PAM sessions; re-login for shells.
+* soft nofile {{ base_host_limits_nofile }}
+* hard nofile {{ base_host_limits_nofile }}
+root soft nofile {{ base_host_limits_nofile }}
+root hard nofile {{ base_host_limits_nofile }}

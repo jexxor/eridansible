@@ -1,0 +1,25 @@
+---
+- name: Install PAM limits drop-in (nofile)
+  ansible.builtin.template:
+    src: limits-nofile.conf.j2
+    dest: /etc/security/limits.d/99-eridansible-nofile.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install sysctl tuning drop-in
+  ansible.builtin.template:
+    src: sysctl-tuning.conf.j2
+    dest: /etc/sysctl.d/99-eridansible-base-host.conf
+    owner: root
+    group: root
+    mode: "0644"
+  register: base_host_sysctl_dropin
+
+- name: Apply sysctl tuning drop-in
+  ansible.builtin.command:
+    argv:
+      - sysctl
+      - -p
+      - /etc/sysctl.d/99-eridansible-base-host.conf
+  changed_when: base_host_sysctl_dropin.changed
