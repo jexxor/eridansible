@@ -1,0 +1,8 @@
+services:
+  coturn:
+    image: {{ matrix_coturn_image }}
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+    command: ["-n", "-c", "/etc/coturn/turnserver.conf"]

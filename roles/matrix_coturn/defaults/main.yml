@@ -1,0 +1,13 @@
+---
+matrix_coturn_enable: false
+matrix_coturn_root: /opt/matrix_coturn
+matrix_coturn_compose_filename: docker-compose.yml
+matrix_coturn_image: docker.io/coturn/coturn:latest
+
+matrix_coturn_static_auth_secret: ""
+matrix_coturn_realm: ""
+matrix_coturn_server_name: ""
+
+matrix_coturn_no_tls: true
+
+matrix_coturn_open_firewall: true

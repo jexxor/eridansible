@@ -1,0 +1,32 @@
+listening-port=3478
+{% if not (matrix_coturn_no_tls | default(true) | bool) %}
+tls-listening-port=5349
+{% endif %}
+listening-ip=0.0.0.0
+relay-ip=0.0.0.0
+{% if (matrix_coturn_realm | default('') | length) > 0 %}
+realm={{ matrix_coturn_realm }}
+{% elif matrix_base_server_name is defined and (matrix_base_server_name | length > 0) %}
+realm={{ matrix_base_server_name }}
+{% else %}
+realm=turn.local
+{% endif %}
+{% if (matrix_coturn_server_name | default('') | length) > 0 %}
+server-name={{ matrix_coturn_server_name }}
+{% elif matrix_base_server_name is defined and (matrix_base_server_name | length > 0) %}
+server-name={{ matrix_base_server_name }}
+{% endif %}
+fingerprint
+lt-cred-mech
+use-auth-secret
+static-auth-secret={{ matrix_coturn_static_auth_secret }}
+no-tlsv1
+no-tlsv1_1
+{% if matrix_coturn_no_tls | default(true) | bool %}
+no-tls
+no-dtls
+{% endif %}
+total-quota=100
+bps-capacity=0
+stale-nonce=600
+no-cli

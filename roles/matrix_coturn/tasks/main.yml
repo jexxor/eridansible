@@ -1,0 +1,59 @@
+---
+- name: Matrix coturn (optional TURN)
+  when: matrix_coturn_enable | bool
+  block:
+    - name: Require static auth secret when coturn is enabled
+      ansible.builtin.assert:
+        that:
+          - matrix_coturn_static_auth_secret | string | length >= 16
+        fail_msg: >-
+          Set matrix_coturn_static_auth_secret (16+ chars) and align matrix_base_turn_uris / turn_shared_secret in Synapse.
+
+    - name: Ensure coturn project directory exists
+      ansible.builtin.file:
+        path: "{{ matrix_coturn_root }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render turnserver.conf
+      ansible.builtin.template:
+        src: turnserver.conf.j2
+        dest: "{{ matrix_coturn_root }}/turnserver.conf"
+        owner: root
+        group: root
+        mode: "0640"
+
+    - name: Render coturn Compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ matrix_coturn_root }}/{{ matrix_coturn_compose_filename }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Bring coturn up
+      ansible.builtin.command:
+        cmd: "docker-compose -f {{ matrix_coturn_compose_filename }} up -d"
+        chdir: "{{ matrix_coturn_root }}"
+      register: matrix_coturn_up
+      changed_when: >-
+        ('Creating' in (matrix_coturn_up.stdout ~ matrix_coturn_up.stderr))
+        or ('Recreating' in (matrix_coturn_up.stdout ~ matrix_coturn_up.stderr))
+        or ('Starting' in (matrix_coturn_up.stdout ~ matrix_coturn_up.stderr))
+
+    - name: Allow TURN TCP/UDP (coturn host ports)
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+        comment: "{{ item.comment }}"
+      loop:
+        - { port: 3478, proto: tcp, comment: coturn TURN TCP }
+        - { port: 3478, proto: udp, comment: coturn TURN UDP }
+        - { port: 5349, proto: tcp, comment: coturn TURNS TCP }
+        - { port: 5349, proto: udp, comment: coturn TURNS UDP }
+      when:
+        - matrix_coturn_open_firewall | default(true) | bool
+        - firewall_enable | default(true) | bool
