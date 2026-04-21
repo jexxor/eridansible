@@ -1,0 +1,15 @@
+---
+# Whether to install Docker packages.
+docker_install: true
+
+# Whether to enable & start the Docker service.
+docker_enable_service: true
+
+# Users to add to the `docker` group so they can run Docker without sudo.
+# By default, add the connecting Ansible user.
+docker_users:
+  - "{{ ansible_user_id }}"
+
+# Whether to install Compose (plugin or package depending on distro).
+docker_install_compose: true
+

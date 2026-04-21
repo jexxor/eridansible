@@ -1,0 +1,8 @@
+---
+firewall_enable: true
+
+firewall_default_incoming_policy: deny
+firewall_default_outgoing_policy: allow
+
+firewall_allow_tcp: []
+firewall_allow_udp: []

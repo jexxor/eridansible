@@ -1,0 +1,64 @@
+---
+- name: Update and upgrade the package list
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: dist
+
+- name: Install basic packages
+  ansible.builtin.apt:
+    name:
+      - vim
+      - sudo
+      - ufw
+      - openssh-server
+      - ca-certificates
+      - curl
+      - wget
+      - rsync
+      - net-tools
+      - tcpdump 
+    state: present
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ ansible_hostname }}"
+
+- name: Enable and start the ssh service on specified port
+  ansible.builtin.systemd:
+    name: ssh
+    enabled: true
+    state: started
+
+
+- name: Configure swapfile
+  block:
+    - name: Create swapfile
+      command: "dd if=/dev/zero of={{ base_host_swapfile_path }} bs=1M count={{ base_host_swapfile_size_mb }}"
+      args:
+        creates: "{{ base_host_swapfile_path }}"
+      register: swapfile_create
+
+    - name: Set permissions for swapfile
+      ansible.builtin.file:
+        path: "{{ base_host_swapfile_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Format swapfile
+      command: "mkswap {{ base_host_swapfile_path }}"
+      when: swapfile_create.changed
+
+    - name: Enable swapfile
+      command: "swapon {{ base_host_swapfile_path }}"
+      when: swapfile_create.changed
+
+    - name: Ensure swapfile is enabled at boot
+      ansible.builtin.mount:
+        name: "none"
+        device: "{{ base_host_swapfile_path }}"
+        fstype: "swap"
+        opts: "sw"
+        state: "present"
+  become: true
+

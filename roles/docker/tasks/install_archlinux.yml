@@ -1,0 +1,7 @@
+---
+- name: Install Docker packages (Arch Linux)
+  community.general.pacman:
+    name: "{{ docker_arch_packages }}"
+    state: present
+    update_cache: true
+

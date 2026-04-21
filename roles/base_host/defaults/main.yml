@@ -1,0 +1,2 @@
+base_host_swapfile_size_mb: "{{ ansible_memtotal_mb }}"
+base_host_swapfile_path: "/swapfile"

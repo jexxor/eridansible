@@ -2,8 +2,6 @@
   hosts: matrix
   become: true
   roles:
-    - role: base
-    - role: tuning
+    - role: base_host
     - role: firewall
     - role: docker
-    
