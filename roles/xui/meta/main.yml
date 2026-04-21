@@ -1,0 +1,5 @@
+---
+galaxy_info:
+  role_name: x_ui
+  description: 3x-ui (Xray panel) with host networking for REALITY / inbounds on host ports
+dependencies: []

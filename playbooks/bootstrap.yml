@@ -7,3 +7,4 @@
     - role: docker
     - role: datastores
     - role: caddy
+    - role: xui

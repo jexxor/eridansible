@@ -2,11 +2,8 @@
 caddy_enable: true
 caddy_root: /opt/caddy
 
-# Path (within caddy_root) for the compose file.
 caddy_compose_filename: compose.yml
 
-# Host:container port mappings (Docker publish syntax). Override when 80/443 are
-# already taken on the host (e.g. another reverse proxy or Xray on 443).
 caddy_compose_ports:
-  - "80:80"
-  - "443:443"
+  - "127.0.0.1:8080:80"
+  - "127.0.0.1:8443:443"

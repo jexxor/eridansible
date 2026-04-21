@@ -1,0 +1,36 @@
+---
+- name: Ensure 3x-ui project directory exists
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ x_ui_root }}"
+    - "{{ x_ui_root }}/db"
+
+- name: Render 3x-ui Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ x_ui_root }}/{{ x_ui_compose_filename }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Pull 3x-ui image
+  ansible.builtin.command:
+    cmd: "docker-compose -f {{ x_ui_compose_filename }} pull"
+    chdir: "{{ x_ui_root }}"
+  when: x_ui_compose_pull_before_up | bool
+  changed_when: false
+
+- name: Bring 3x-ui up
+  ansible.builtin.command:
+    cmd: "docker-compose -f {{ x_ui_compose_filename }} up -d"
+    chdir: "{{ x_ui_root }}"
+  register: x_ui_compose_up
+  changed_when: >-
+    ('Creating' in (x_ui_compose_up.stdout ~ x_ui_compose_up.stderr))
+    or ('Recreating' in (x_ui_compose_up.stdout ~ x_ui_compose_up.stderr))
+    or ('Starting' in (x_ui_compose_up.stdout ~ x_ui_compose_up.stderr))
